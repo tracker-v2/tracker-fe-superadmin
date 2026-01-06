@@ -36,6 +36,14 @@ export default function LoginPage() {
       const token = await loginApi(email, password);
       setToken(token);
       const userProfile = await getProfileApi(token);
+
+      // ✅ VALIDASI ROLE SUPER_ADMIN
+      if (userProfile.role !== 'super_admin') {
+        setErrorMessage("Akses ditolak. Anda bukan Super Admin.");
+        setToken("");
+        return;
+      }
+
       useAuthStore.getState().setUser(userProfile);
       navigate("/dashboard");
     } catch (err: unknown) {
@@ -61,7 +69,7 @@ export default function LoginPage() {
 
         <div className='my-auto'>
           <div className='flex flex-col items-center gap-2 text-center mt-10 mb-16'>
-            <h1 className='text-4xl font-semibold'>Selamat Datang di Matador Tracker</h1>
+            <h1 className='text-4xl font-semibold'>Selamat Datang di Matador Super Admin</h1>
             <p className='text-balance text-base text-muted-foreground'>Masukkan email dan password untuk mengakses akun Anda</p>
           </div>
 
@@ -77,7 +85,7 @@ export default function LoginPage() {
                   <Label htmlFor='email' >Kata sandi</Label>
                   <Input id='password' type={showPassword ? "text" : "password"} placeholder='Kata sandi' required className='bg-white pr-10' value={password} onChange={(e) => setPassword(e.target.value)} />
                   <button type='button' className='absolute   right-3 top-12 -translate-y-1/2 text-gray-500' onClick={() => setShowPassword((prev) => !prev)} aria-label='Toggle password visibility'>
-                    {showPassword ? <EyeOff  size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
 

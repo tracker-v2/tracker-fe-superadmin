@@ -1,13 +1,14 @@
 import * as React from "react";
 import matador from "../assets/matador.png";
 import iconmatador from "../assets/matador-logo.png";
-import { LayoutDashboard, Wrench, FileText, Car } from "lucide-react";
+import { LayoutDashboard, Wrench, FileText, Car, House, UserRound, } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "./nav-user";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail, useSidebar } from "@/components/ui/sidebar";
 import { NotificationDropdown } from "./notificationDropdown";
 import { Separator } from "./ui/separator";
 import { useAuthStore } from "@/store/useAuthStore";
+
 
 // This is sample data.
 const data = {
@@ -23,26 +24,51 @@ const data = {
   },
   navMain: [
     {
+      title: "Home",
+      url: "/home",
+      icon: House,
+    },
+    {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutDashboard,
       isActive: true,
     },
+    // {
+    //   title: "Kendaraan",
+    //   url: "/kendaraan",
+    //   icon: Car,
+    // },
+    // {
+    //   title: "Laporan",
+    //   url: "/laporan",
+    //   icon: FileText,
+    // },
+    // {
+    //   title: "Perawatan Kendaraan",
+    //   url: "/vehicle-maintenances",
+    //   icon: Wrench,
+    // },
     {
-      title: "Kendaraan",
-      url: "/kendaraan",
+      title: "Manajemen Device",
+      url: "/device-management",
       icon: Car,
     },
     {
-      title: "Laporan",
-      url: "/laporan",
+      title: "Manajemen Organisasi",
+      url: "/manajemen-organisasi",
       icon: FileText,
     },
     {
-      title: "Perawatan Kendaraan",
-      url: "/vehicle-maintenances",
-      icon: Wrench,
+      title: "Manajemen User",
+      url: "/manajemen-user",
+      icon: UserRound,
     },
+    {
+      title: "Fuel Calibration",
+      url: "/fuel-calibration",
+      icon: Wrench,
+    }
   ],
 };
 

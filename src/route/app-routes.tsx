@@ -14,6 +14,10 @@ import { Toaster } from "sonner";
 import VehicleMaintenanceIndexPage from "@/pages/vehicle-maintenance";
 import VehicleMaintenanceShowPage from "@/pages/vehicle-maintenance/show";
 import VehicleMaintenanceReportPage from "@/pages/vehicle-maintenance/report";
+import { ManajemenOrganisasiPage } from "@/pages/manajemen-organisasi/manajemen-organisasi";
+import { ManajemenUserPage } from "@/pages/manajemen-user/manajemen-user";
+import { FuelCalibrationPage } from "@/pages/fuel-calibration/fuel-calibration";
+import { HomePage } from "@/pages/home/home";
 
 const AppRoutes = () => {
   return (
@@ -33,7 +37,7 @@ const AppRoutes = () => {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
-          
+
           <Route path="/vehicle-maintenances">
             <Route index element={<VehicleMaintenanceIndexPage />} />
             <Route path="reports" element={<VehicleMaintenanceReportPage />} />
@@ -43,6 +47,10 @@ const AppRoutes = () => {
           <Route path="/laporan" element={<Laporan />} />
           <Route path="/profile" element={<Profil />} />
           <Route path="/pengguna" element={<Pengguna />} />
+          <Route path="/manajemen-organisasi" element={<ManajemenOrganisasiPage />} />
+          <Route path="/manajemen-user" element={<ManajemenUserPage />} />
+          <Route path="/fuel-calibration" element={<FuelCalibrationPage />} />
+          <Route path="/home" element={<HomePage />} />
         </Route>
 
         <Route
