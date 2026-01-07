@@ -95,7 +95,7 @@ const Dashboard = () => {
               <Car color="#16A34A" absoluteStrokeWidth />
             </span>
             <div className="flex-grow min-w-0">
-              <p className="text-sm whitespace-nowrap">Kendaraan <br /> Beroperasi</p>
+              <p className="text-sm whitespace-nowrap">Kendaraan Aktif</p>
               <p className="font-semibold">{activeVehicles}</p>
             </div>
             <Button
@@ -115,7 +115,7 @@ const Dashboard = () => {
               <Car color="#EAB308" absoluteStrokeWidth />
             </span>
             <div className="flex-grow min-w-0">
-              <p className="text-sm whitespace-nowrap">Kendaraan Idle</p>
+              <p className="text-sm whitespace-nowrap">Kendaraan Diam</p>
               <p className="font-semibold">{idleVehicles}</p>
             </div>
             <Button

@@ -1,8 +1,10 @@
+
 import { MapContainer, TileLayer, Marker, Tooltip, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Vehicle } from "@/types/types";
 import { FitBoundsToVehicles } from "./focus-vehicle";
+import React, { useState } from "react";
 
 interface VehicleMapProps {
   vehicleLocations: Vehicle[];
@@ -139,106 +141,138 @@ const formatVehicleType = (type: string | undefined) => {
   return type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
+
 const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
+  // Ambil daftar unik perusahaan dari data kendaraan
+  const companyList = Array.from(
+    new Set(vehicleLocations.map((v) => v.company_name).filter(Boolean))
+  );
+
+  const [selectedCompany, setSelectedCompany] = useState<string | "">("");
+
+  // Filter kendaraan berdasarkan perusahaan yang dipilih
+  const filteredVehicles =
+    selectedCompany && selectedCompany !== ""
+      ? vehicleLocations.filter((v) => v.company_name === selectedCompany)
+      : vehicleLocations;
+
   return (
-    <MapContainer
-      center={[-6.2, 106.8167]}
-      zoom={13}
-      className="h-full w-full"
-      zoomControl={false}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
+    <div className="relative h-full w-full">
+      {/* Dropdown Pilih Perusahaan */}
+      <div className="absolute z-[1000] left-4 top-4 bg-white rounded shadow p-2">
+        <select
+          className="border rounded px-2 py-1 text-sm"
+          value={selectedCompany}
+          onChange={(e) => setSelectedCompany(e.target.value)}
+        >
+          <option value="">Pilih Perusahaan</option>
+          {companyList.map((company) => (
+            <option key={company} value={company}>
+              {company}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {vehicleLocations.map((vehicle) => {
-        const statusInfo = getStatusInfo(vehicle.status);
-        const displayType = vehicle.vehicle_type;
+      <MapContainer
+        center={[-6.2, 106.8167]}
+        zoom={13}
+        className="h-full w-full"
+        zoomControl={false}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
 
-        return (
-          <Marker
-            key={vehicle.id}
-            position={[vehicle.lat, vehicle.lng]}
-            icon={getVehicleIcon(vehicle.vehicle_type, vehicle.status)}
-          >
-            <Tooltip
-              direction="top"
-              offset={[0, -24]}
-              permanent={false}
-              className="custom-tooltip"
+        {filteredVehicles.map((vehicle) => {
+          const statusInfo = getStatusInfo(vehicle.status);
+          const displayType = vehicle.vehicle_type;
+
+          return (
+            <Marker
+              key={vehicle.id}
+              position={[vehicle.lat, vehicle.lng]}
+              icon={getVehicleIcon(vehicle.vehicle_type, vehicle.status)}
             >
-              <div className="text-sm flex flex-col items-start bg-white p-3 min-w-[220px]">
-                {/* Company Name */}
-                {vehicle.company_name && (
-                  <p className="text-xs text-gray-500 mb-1 truncate w-full">
-                    {vehicle.company_name}
-                  </p>
-                )}
-
-                {/* License Plate - Bold */}
-                <p className="font-bold text-base text-black mb-1">
-                  {vehicle.license_plate}
-                </p>
-
-                {/* Brand & Model */}
-                {vehicle.brand && vehicle.model && (
-                  <p className="text-sm text-gray-700 mb-1">
-                    {vehicle.brand} {vehicle.model}
-                  </p>
-                )}
-
-                {/* Vehicle Type */}
-                {displayType && (
-                  <p className="text-xs text-blue-600 font-medium mb-2">
-                    {formatVehicleType(displayType)}
-                  </p>
-                )}
-
-                {/* Status Badge */}
-                <div className="mb-2">
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${statusInfo.bgColor} ${statusInfo.textColor}`}
-                  >
-                    {statusInfo.label}
-                  </span>
-                </div>
-
-                {/* Meter Information */}
-                <div className="w-full border-t border-gray-200 pt-2">
-                  {displayType === "EXCAVATOR" ||
-                    displayType === "BULLDOZER" ||
-                    displayType === "WHEEL_LOADER" ||
-                    displayType === "GRADER" ? (
-                    <p className="text-xs text-gray-600">
-                      ⏱️ Hourmeter:{" "}
-                      <span className="font-semibold">
-                        {vehicle.hourmeter || 0} Jam
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-600">
-                      🛣️ Odometer:{" "}
-                      <span className="font-semibold">
-                        {vehicle.odometer
-                          ? vehicle.odometer.toLocaleString()
-                          : 0}{" "}
-                        Km
-                      </span>
+              <Tooltip
+                direction="top"
+                offset={[0, -24]}
+                permanent={false}
+                className="custom-tooltip"
+              >
+                <div className="text-sm flex flex-col items-start bg-white p-3 min-w-[220px]">
+                  {/* Company Name */}
+                  {vehicle.company_name && (
+                    <p className="text-xs text-gray-500 mb-1 truncate w-full">
+                      {vehicle.company_name}
                     </p>
                   )}
+
+                  {/* License Plate - Bold */}
+                  <p className="font-bold text-base text-black mb-1">
+                    {vehicle.license_plate}
+                  </p>
+
+                  {/* Brand & Model */}
+                  {vehicle.brand && vehicle.model && (
+                    <p className="text-sm text-gray-700 mb-1">
+                      {vehicle.brand} {vehicle.model}
+                    </p>
+                  )}
+
+                  {/* Vehicle Type */}
+                  {displayType && (
+                    <p className="text-xs text-blue-600 font-medium mb-2">
+                      {formatVehicleType(displayType)}
+                    </p>
+                  )}
+
+                  {/* Status Badge */}
+                  <div className="mb-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${statusInfo.bgColor} ${statusInfo.textColor}`}
+                    >
+                      {statusInfo.label}
+                    </span>
+                  </div>
+
+                  {/* Meter Information */}
+                  <div className="w-full border-t border-gray-200 pt-2">
+                    {displayType === "EXCAVATOR" ||
+                      displayType === "BULLDOZER" ||
+                      displayType === "WHEEL_LOADER" ||
+                      displayType === "GRADER" ? (
+                      <p className="text-xs text-gray-600">
+                        ⏱️ Hourmeter:{" "}
+                        <span className="font-semibold">
+                          {vehicle.hourmeter || 0} Jam
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        🛣️ Odometer:{" "}
+                        <span className="font-semibold">
+                          {vehicle.odometer
+                            ? vehicle.odometer.toLocaleString()
+                            : 0}{" "}
+                          Km
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Tooltip>
-          </Marker>
-        );
-      })}
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
-      {/* Automatically fit all markers in view */}
-      <FitBoundsToVehicles vehicles={vehicleLocations} />
+        {/* Automatically fit all markers in view */}
+        <FitBoundsToVehicles vehicles={filteredVehicles} />
 
-      <ZoomControl position="topright" />
-    </MapContainer>
+        <ZoomControl position="topright" />
+      </MapContainer>
+    </div>
   );
 };
 

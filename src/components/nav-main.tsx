@@ -52,8 +52,8 @@ export function NavMain({
                   </Tooltip>
                 ) : (
                   <SidebarMenuButton tooltip={item.title} className={`${isCollapsed ? "items-center" : ""} cursor-pointer  ${(pathname === item.url || pathname.startsWith(item.url)) ? "bg-blue-900 text-primary-foreground" : ""}`} onClick={() => handleNavigation(item.url)}>
-                    {item.icon && <item.icon size={20} />}
-                    <span className='text-lg font-medium'>{item.title}</span>
+                    {item.icon && <item.icon size={16} />} {/* perkecil icon */}
+                    <span className='text-sm font-medium'>{item.title}</span> {/* perkecil font */}
                   </SidebarMenuButton>
                 )}
               </CollapsibleTrigger>

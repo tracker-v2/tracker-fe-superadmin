@@ -34,21 +34,6 @@ const data = {
       icon: LayoutDashboard,
       isActive: true,
     },
-    // {
-    //   title: "Kendaraan",
-    //   url: "/kendaraan",
-    //   icon: Car,
-    // },
-    // {
-    //   title: "Laporan",
-    //   url: "/laporan",
-    //   icon: FileText,
-    // },
-    // {
-    //   title: "Perawatan Kendaraan",
-    //   url: "/vehicle-maintenances",
-    //   icon: Wrench,
-    // },
     {
       title: "Manajemen Device",
       url: "/device-management",
