@@ -3,13 +3,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
+import { createCompanyApi } from "@/api/companies";
 
 interface DialogOrganisasiTambahProps {
     open: boolean;
     setDialogOrganisasi: (value: "tambah" | null) => void;
+    onSuccess?: () => void;
 }
 
-export default function DialogOrganisasiTambah({ open, setDialogOrganisasi }: DialogOrganisasiTambahProps) {
+export default function DialogOrganisasiTambah({ open, setDialogOrganisasi, onSuccess }: DialogOrganisasiTambahProps) {
     const [form, setForm] = useState({
         nama: "",
         email: "",
@@ -19,17 +22,85 @@ export default function DialogOrganisasiTambah({ open, setDialogOrganisasi }: Di
         pjNama: "",
         pjEmail: "",
         pjTelepon: "",
+        codeConfirm: "",
+        endDate: "",
     });
+
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.id]: e.target.value });
     };
 
-    const isFormValid = form.nama && form.email && form.telepon && form.tipeIndustri && form.alamat && form.pjNama && form.pjEmail && form.pjTelepon;
+    const isFormValid =
+        form.nama &&
+        form.email &&
+        form.telepon &&
+        form.tipeIndustri &&
+        form.alamat &&
+        form.pjNama &&
+        form.pjEmail &&
+        form.pjTelepon &&
+        form.codeConfirm &&
+        form.endDate;
 
-    function handleSubmit(e: FormEvent) {
+    async function handleSubmit(e: FormEvent) {
         e.preventDefault();
-        // Submit logic here
+
+        if (!isFormValid) {
+            toast.error("Semua field harus diisi");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // Prepare data untuk API createCompanyApi
+            const companyData = {
+                name: form.nama,
+                email: form.email,
+                address: form.alamat,
+                phoneNumber: form.telepon,
+                industryType: form.tipeIndustri,
+                picName: form.pjNama,
+                picPhone: form.pjTelepon,
+                codeConfirm: form.codeConfirm, // Diisi dari form
+                startDate: new Date().toISOString().split('T')[0], // Set tanggal hari ini
+                endDate: form.endDate, // Diisi dari form
+                isActive: true, // Default active
+            };
+
+            await createCompanyApi(companyData);
+
+            toast.success("Perusahaan berhasil ditambahkan");
+
+            // Reset form
+            setForm({
+                nama: "",
+                email: "",
+                telepon: "",
+                tipeIndustri: "",
+                alamat: "",
+                pjNama: "",
+                pjEmail: "",
+                pjTelepon: "",
+                codeConfirm: "",
+                endDate: "",
+            });
+
+            // Close dialog
+            setDialogOrganisasi(null);
+
+            // Trigger refresh data
+            if (onSuccess) {
+                onSuccess();
+            }
+        } catch (error) {
+            console.error("Error adding company:", error);
+            toast.error(error instanceof Error ? error.message : "Gagal menambah perusahaan");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -69,6 +140,14 @@ export default function DialogOrganisasiTambah({ open, setDialogOrganisasi }: Di
                                     <Label htmlFor="alamat">Alamat Perusahaan</Label>
                                     <Input id="alamat" placeholder="Alamat" value={form.alamat} onChange={handleChange} />
                                 </div>
+                                <div className="flex flex-col space-y-2">
+                                    <Label htmlFor="codeConfirm">Kode Konfirmasi</Label>
+                                    <Input id="codeConfirm" placeholder="Kode Konfirmasi" value={form.codeConfirm} onChange={handleChange} />
+                                </div>
+                                <div className="flex flex-col space-y-2">
+                                    <Label htmlFor="endDate">Tanggal Berakhir</Label>
+                                    <Input id="endDate" type="date" value={form.endDate} onChange={handleChange} />
+                                </div>
                             </div>
                         </div>
                         <div>
@@ -90,11 +169,11 @@ export default function DialogOrganisasiTambah({ open, setDialogOrganisasi }: Di
                         </div>
                     </div>
                     <div className="w-full flex justify-end gap-3 mt-4">
-                        <Button type="button" variant={"outline"} onClick={() => setDialogOrganisasi(null)} className="bg-transparent">
+                        <Button type="button" variant={"outline"} onClick={() => setDialogOrganisasi(null)} className="bg-transparent" disabled={loading}>
                             Batal
                         </Button>
-                        <Button type="submit" className="bg-blue-900 disabled:bg-gray-600" disabled={!isFormValid}>
-                            Tambah Perusahaan
+                        <Button type="submit" className="bg-blue-900 disabled:bg-gray-600" disabled={!isFormValid || loading}>
+                            {loading ? "Menyimpan..." : "Tambah Perusahaan"}
                         </Button>
                     </div>
                 </form>

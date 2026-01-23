@@ -16,7 +16,10 @@ import VehicleMaintenanceShowPage from "@/pages/vehicle-maintenance/show";
 import VehicleMaintenanceReportPage from "@/pages/vehicle-maintenance/report";
 import { ManajemenOrganisasiPage } from "@/pages/manajemen-organisasi/manajemen-organisasi";
 import { ManajemenUserPage } from "@/pages/manajemen-user/manajemen-user";
+import { ManajemenDevicePage } from "@/pages/manajemen-device/manajemen-device";
 import { FuelCalibrationPage } from "@/pages/fuel-calibration/fuel-calibration";
+import { ListKendaraanPage } from "@/pages/kendaraan/list-kendaraan";
+import { ListOdometerPage } from "@/pages/odometer/list-odometer";
 import { HomePage } from "@/pages/home/home";
 
 const AppRoutes = () => {
@@ -49,6 +52,9 @@ const AppRoutes = () => {
           <Route path="/pengguna" element={<Pengguna />} />
           <Route path="/manajemen-organisasi" element={<ManajemenOrganisasiPage />} />
           <Route path="/manajemen-user" element={<ManajemenUserPage />} />
+          <Route path="/manajemen-device" element={<ManajemenDevicePage />} />
+          <Route path="/list-kendaraan/:companyId" element={<ListKendaraanPage />} />
+          <Route path="/list-odometer/:companyId" element={<ListOdometerPage />} />
           <Route path="/fuel-calibration" element={<FuelCalibrationPage />} />
           <Route path="/home" element={<HomePage />} />
         </Route>
