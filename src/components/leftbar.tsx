@@ -36,7 +36,7 @@ const data = {
     },
     {
       title: "Manajemen Device",
-      url: "/device-management",
+      url: "/manajemen-device",
       icon: Car,
     },
     {

@@ -45,10 +45,6 @@ export const getMachineActiveVehicle = async (companyId: number) => {
   return res.data.data;
 };
 
-export const getVehicleDetail = async (vehicleId: number) => {
-  const res = await axios.get(`vehicles/vehicle-detail/${vehicleId}`);
-  return res.data.data;
-};
 
 export const getVehicleActivityReport = async ( vehicleId: number, date: string ) => {
   const res = await axios.get(`vehicles/activity/trip-report/${vehicleId}/date`, { params: { date } });
@@ -77,3 +73,56 @@ export const toggleVehicleStarter = async (
   );
   return res.data;
 };
+
+// api to get detailed list of vehicles by company - super admin
+export const getDetailedListVehiclesByCompany = async (companyId: number) => {
+  const res = await axios.get(`vehicles/list/sa/${companyId}/detailed`);
+  return res.data.data;
+};
+
+// count company - super admin
+
+export const getVehiclesCountAllCompanies = async () => {
+  const res = await axios.get(`vehicles/count/sa`);
+  return res.data.data.vehicle_count ?? 0;
+};
+
+export const getVehiclesCountByCompany = async (companyId: number) => {
+  const res = await axios.get(`vehicles/count/sa/${companyId}`);
+  return res.data.data.vehicle_count ?? 0;
+}
+
+export const deleteVehicleById = async (vehicleId: number) => {
+  const res = await axios.delete(`vehicles/${vehicleId}`);
+  return res.data;
+}
+
+// Vehicles API
+export const editVehiclesById = async (vehicleId: number, vehicleData: object) => {
+  const res = await axios.put(`vehicles/${vehicleId}`, vehicleData);
+  return res.data;
+}
+
+export const getVehicleDetail = async (vehicleId: number, companyId: number) => {
+  const res = await axios.get(`vehicles/vehicle-details/${vehicleId}`, {
+    params: { companyId }
+  });
+  return res.data.data;
+};
+
+// MODEL VEHICLE API
+
+export const addVehicleModel = async (modelData: number) => {
+  const res = await axios.post(`vehicles/models`, modelData);
+  return res.data;
+}
+
+export const editVehicleModelById = async (modelId: number, modelData: number) => {
+  const res = await axios.put(`vehicles/models/${modelId}`, modelData);
+  return res.data;
+}
+
+export const deleteVehicleModelById = async (modelId: number) => {
+  const res = await axios.delete(`vehicles/models/${modelId}`);
+  return res.data;
+}
