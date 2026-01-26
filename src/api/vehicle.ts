@@ -98,10 +98,21 @@ export const deleteVehicleById = async (vehicleId: number) => {
 }
 
 // Vehicles API
-export const editVehiclesById = async (vehicleId: number, vehicleData: object) => {
-  const res = await axios.put(`vehicles/${vehicleId}`, vehicleData);
+// export const editVehiclesById = async (vehicleId: number, vehicleData: object) => {
+//   const res = await axios.put(`vehicles/${vehicleId}`, vehicleData);
+//   return res.data;
+// }
+
+// Edit Vehicle Super Admin
+export const editVehicleSuperAdmin = async (vehicleId: number, companyId: number, vehicleData: object) => {
+  const payload = {
+    ...vehicleData,
+    companyId: companyId
+  };
+
+  const res = await axios.put(`vehicles/superadmin/${vehicleId}`, payload);
   return res.data;
-}
+};
 
 export const getVehicleDetail = async (vehicleId: number, companyId: number) => {
   const res = await axios.get(`vehicles/vehicle-details/${vehicleId}`, {

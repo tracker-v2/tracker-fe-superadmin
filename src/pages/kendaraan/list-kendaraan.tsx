@@ -5,8 +5,9 @@ import axios from "@/lib/axios";
 import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah";
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
-import { getDetailedListVehiclesByCompany } from "@/api/vehicle";
+import { getDetailedListVehiclesByCompany, editVehicleSuperAdmin } from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
+import { toast } from "sonner";
 
 // Import interface dari dialog
 interface KendaraanFormData {
@@ -205,6 +206,52 @@ export function ListKendaraanPage() {
             alert("Gagal menambah kendaraan. Silakan coba lagi.");
         }
     };
+
+    const handleEditVehicle = async (data: KendaraanFormData) => {
+        if (!selectedVehicle || !companyId) {
+            toast.error("Data kendaraan atau ID perusahaan tidak valid");
+            return;
+        }
+
+        const toastId = toast.loading("Menyimpan perubahan...");
+
+        try {
+            const vehiclePayload = {
+                licensePlate: data.licensePlate,
+                description: data.description,
+                vehicleType: data.vehicleType,
+                odometer: data.odometer,
+                fuelTank: data.tankCapacity,
+                frameNumber: data.frameNumber,
+                engineNumber: data.engineNumber,
+                color: data.color,
+                year: data.year,
+                brand: data.brand,
+                model: data.model,
+                markingNumber: data.markingNumber,
+                hasFuel: data.hasFuel,
+                hasOnOff: data.hasOnOff,
+                fuelCalibration: data.fuelCalibration,
+            };
+
+            await editVehicleSuperAdmin(
+                selectedVehicle.id, 
+                Number(companyId), 
+                vehiclePayload
+            );
+
+            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
+            setVehicles(updatedVehicles || []);
+            
+            toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
+            setOpenDialogEdit(false);
+            setSelectedVehicle(null);
+
+        } catch (err) {
+            console.error("Error updating vehicle:", err);
+            toast.error("Gagal mengupdate kendaraan. Silakan coba lagi.", { id: toastId });
+        }
+    }
 
     const handleAddModel = (data: ModelKendaraanFormData) => {
         try {
@@ -539,36 +586,7 @@ export function ListKendaraanPage() {
                 onOpenChange={setOpenDialogEdit}
                 vehicle={selectedVehicle}
                 companyId={Number(companyId)}
-                onSubmit={(data) => {
-                    if (selectedVehicle) {
-                        axios.put(`/vehicles/${selectedVehicle.id}`, {
-                            licensePlate: data.licensePlate,
-                            description: data.description,
-                            vehicleType: data.vehicleType,
-                            odometer: data.odometer,
-                            fuelTank: data.tankCapacity,
-                            frameNumber: data.frameNumber,
-                            engineNumber: data.engineNumber,
-                            color: data.color,
-                            year: data.year,
-                            brand: data.brand,
-                            model: data.model,
-                            markingNumber: data.markingNumber,
-                            hasFuel: data.hasFuel,
-                            hasOnOff: data.hasOnOff,
-                            fuelCalibration: data.fuelCalibration,
-                        }).then(() => {
-                            getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                                setVehicles(updatedVehicles || []);
-                            });
-                            setOpenDialogEdit(false);
-                            setSelectedVehicle(null);
-                        }).catch((err) => {
-                            console.error("Error updating vehicle:", err);
-                            alert("Gagal mengupdate kendaraan. Silakan coba lagi.");
-                        });
-                    }
-                }}
+                onSubmit={handleEditVehicle}
             />
 
             {/* Dialog untuk tambah model kendaraan */}
