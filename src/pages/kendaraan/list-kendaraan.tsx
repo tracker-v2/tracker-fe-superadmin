@@ -19,7 +19,7 @@ interface KendaraanFormData {
     frameNumber: string;
     engineNumber: string;
     color: string;
-    year: string;
+    year: number;
     brand: string;
     model: string;
     markingNumber: string;
