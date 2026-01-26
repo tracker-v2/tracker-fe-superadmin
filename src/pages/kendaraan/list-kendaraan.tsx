@@ -5,7 +5,11 @@ import axios from "@/lib/axios";
 import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah";
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
-import { getDetailedListVehiclesByCompany, editVehicleSuperAdmin } from "@/api/vehicle";
+import {
+    getDetailedListVehiclesByCompany, 
+    editVehicleSuperAdmin,
+    deleteVehicleById
+} from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
 import { toast } from "sonner";
 
@@ -253,6 +257,25 @@ export function ListKendaraanPage() {
         }
     }
 
+    const handleDeleteVehicle = async (vehicleId: number) => {
+        if (!confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) return;
+
+        const toastId = toast.loading("Sedang menghapus kendaraan...");
+
+        try {
+            await deleteVehicleById(vehicleId);
+            
+            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
+            setVehicles(updatedVehicles || []);
+            setOpenMenuId(null);
+            toast.success("Kendaraan berhasil dihapus", { id: toastId });
+
+        } catch (error) {
+            console.error("Gagal menghapus kendaraan:", error);
+            toast.error("Gagal menghapus kendaraan. Silakan coba lagi.", { id: toastId });
+        }
+    }
+
     const handleAddModel = (data: ModelKendaraanFormData) => {
         try {
             // TODO: Call API to add model vehicle
@@ -486,16 +509,7 @@ export function ListKendaraanPage() {
                                                                     Edit
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => {
-                                                                        if (confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) {
-                                                                            axios.delete(`/vehicles/${vehicle.id}`).then(() => {
-                                                                                getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                                                                                    setVehicles(updatedVehicles || []);
-                                                                                });
-                                                                                setOpenMenuId(null);
-                                                                            });
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => handleDeleteVehicle(vehicle.id)}
                                                                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
                                                                 >
                                                                     <Trash2 size={16} />
