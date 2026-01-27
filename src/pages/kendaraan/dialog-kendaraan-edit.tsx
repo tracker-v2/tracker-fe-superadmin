@@ -52,7 +52,7 @@ interface KendaraanFormData {
   frameNumber: string;
   engineNumber: string;
   color: string;
-  year: string;
+  year: number;
   brand: string;
   model: string;
   markingNumber: string;
@@ -72,7 +72,7 @@ const initialFormData: KendaraanFormData = {
   frameNumber: "",
   engineNumber: "",
   color: "",
-  year: "",
+  year: 0,
   brand: "",
   model: "",
   markingNumber: "",
@@ -125,7 +125,7 @@ export function DialogKendaraanEdit({
           frameNumber: vehicleData.frameNumber || "",
           engineNumber: vehicleData.engineNumber || "",
           color: vehicleData.color || "",
-          year: vehicleData.year?.toString() || "",
+          year: vehicleData.year || 0,
           brand: vehicleData.brand || "",
           model: vehicleData.model || "",
           markingNumber: vehicleData.markingNumber || "",
@@ -166,7 +166,7 @@ export function DialogKendaraanEdit({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "year" ? (value === "" ? 0 : Number(value)) : value,
     }));
   };
 
@@ -252,15 +252,15 @@ export function DialogKendaraanEdit({
                     <SelectValue placeholder="Pilih tipe kendaraan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mobil-penumpang">Mobil Penumpang</SelectItem>
-                    <SelectItem value="mobil-beban">Mobil Beban</SelectItem>
-                    <SelectItem value="pickup-truck">Pickup Truck</SelectItem>
-                    <SelectItem value="dump-truck">Dump Truck</SelectItem>
-                    <SelectItem value="excavator">Excavator</SelectItem>
-                    <SelectItem value="bulldozer">Bulldozer</SelectItem>
-                    <SelectItem value="wheel-loader">Wheel Loader</SelectItem>
-                    <SelectItem value="grader">Grader</SelectItem>
-                    <SelectItem value="road-roller">Road Roller</SelectItem>
+                    <SelectItem value="MOBIL_PENUMPANG">Mobil Penumpang</SelectItem>
+                    <SelectItem value="MOBIL_BEBAN">Mobil Beban</SelectItem>
+                    <SelectItem value="PICKUP_TRUCK">Pickup Truck</SelectItem>
+                    <SelectItem value="DUMP_TRUCK">Dump Truck</SelectItem>
+                    <SelectItem value="EXCAVATOR">Excavator</SelectItem>
+                    <SelectItem value="BULLDOZER">Bulldozer</SelectItem>
+                    <SelectItem value="WHEEL_LOADER">Wheel Loader</SelectItem>
+                    <SelectItem value="GRADER">Grader</SelectItem>
+                    <SelectItem value="ROAD_ROLLER">Road Roller</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

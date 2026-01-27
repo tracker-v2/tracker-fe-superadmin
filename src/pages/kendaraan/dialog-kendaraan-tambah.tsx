@@ -30,7 +30,7 @@ interface KendaraanFormData {
   frameNumber: string;
   engineNumber: string;
   color: string;
-  year: string;
+  year: number;
   brand: string;
   model: string;
   markingNumber: string;
@@ -48,7 +48,7 @@ const initialFormData: KendaraanFormData = {
   frameNumber: "",
   engineNumber: "",
   color: "",
-  year: "",
+  year: 0,
   brand: "",
   model: "",
   markingNumber: "",

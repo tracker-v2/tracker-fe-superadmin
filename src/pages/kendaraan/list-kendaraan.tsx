@@ -5,8 +5,13 @@ import axios from "@/lib/axios";
 import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah";
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
-import { getDetailedListVehiclesByCompany } from "@/api/vehicle";
+import {
+    getDetailedListVehiclesByCompany, 
+    editVehicleSuperAdmin,
+    deleteVehicleById
+} from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
+import { toast } from "sonner";
 
 // Import interface dari dialog
 interface KendaraanFormData {
@@ -18,7 +23,7 @@ interface KendaraanFormData {
     frameNumber: string;
     engineNumber: string;
     color: string;
-    year: string;
+    year: number;
     brand: string;
     model: string;
     markingNumber: string;
@@ -205,6 +210,71 @@ export function ListKendaraanPage() {
             alert("Gagal menambah kendaraan. Silakan coba lagi.");
         }
     };
+
+    const handleEditVehicle = async (data: KendaraanFormData) => {
+        if (!selectedVehicle || !companyId) {
+            toast.error("Data kendaraan atau ID perusahaan tidak valid");
+            return;
+        }
+
+        const toastId = toast.loading("Menyimpan perubahan...");
+
+        try {
+            const vehiclePayload = {
+                licensePlate: data.licensePlate,
+                description: data.description,
+                vehicleType: data.vehicleType,
+                odometer: data.odometer,
+                fuelTank: data.tankCapacity,
+                frameNumber: data.frameNumber,
+                engineNumber: data.engineNumber,
+                color: data.color,
+                year: data.year,
+                brand: data.brand,
+                model: data.model,
+                markingNumber: data.markingNumber,
+                hasFuel: data.hasFuel,
+                hasOnOff: data.hasOnOff,
+                fuelCalibration: data.fuelCalibration,
+            };
+
+            await editVehicleSuperAdmin(
+                selectedVehicle.id, 
+                Number(companyId), 
+                vehiclePayload
+            );
+
+            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
+            setVehicles(updatedVehicles || []);
+            
+            toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
+            setOpenDialogEdit(false);
+            setSelectedVehicle(null);
+
+        } catch (err) {
+            console.error("Error updating vehicle:", err);
+            toast.error("Gagal mengupdate kendaraan. Silakan coba lagi.", { id: toastId });
+        }
+    }
+
+    const handleDeleteVehicle = async (vehicleId: number) => {
+        if (!confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) return;
+
+        const toastId = toast.loading("Sedang menghapus kendaraan...");
+
+        try {
+            await deleteVehicleById(vehicleId);
+            
+            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
+            setVehicles(updatedVehicles || []);
+            setOpenMenuId(null);
+            toast.success("Kendaraan berhasil dihapus", { id: toastId });
+
+        } catch (error) {
+            console.error("Gagal menghapus kendaraan:", error);
+            toast.error("Gagal menghapus kendaraan. Silakan coba lagi.", { id: toastId });
+        }
+    }
 
     const handleAddModel = (data: ModelKendaraanFormData) => {
         try {
@@ -439,16 +509,7 @@ export function ListKendaraanPage() {
                                                                     Edit
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => {
-                                                                        if (confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) {
-                                                                            axios.delete(`/vehicles/${vehicle.id}`).then(() => {
-                                                                                getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                                                                                    setVehicles(updatedVehicles || []);
-                                                                                });
-                                                                                setOpenMenuId(null);
-                                                                            });
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => handleDeleteVehicle(vehicle.id)}
                                                                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
                                                                 >
                                                                     <Trash2 size={16} />
@@ -539,36 +600,7 @@ export function ListKendaraanPage() {
                 onOpenChange={setOpenDialogEdit}
                 vehicle={selectedVehicle}
                 companyId={Number(companyId)}
-                onSubmit={(data) => {
-                    if (selectedVehicle) {
-                        axios.put(`/vehicles/${selectedVehicle.id}`, {
-                            licensePlate: data.licensePlate,
-                            description: data.description,
-                            vehicleType: data.vehicleType,
-                            odometer: data.odometer,
-                            fuelTank: data.tankCapacity,
-                            frameNumber: data.frameNumber,
-                            engineNumber: data.engineNumber,
-                            color: data.color,
-                            year: data.year,
-                            brand: data.brand,
-                            model: data.model,
-                            markingNumber: data.markingNumber,
-                            hasFuel: data.hasFuel,
-                            hasOnOff: data.hasOnOff,
-                            fuelCalibration: data.fuelCalibration,
-                        }).then(() => {
-                            getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                                setVehicles(updatedVehicles || []);
-                            });
-                            setOpenDialogEdit(false);
-                            setSelectedVehicle(null);
-                        }).catch((err) => {
-                            console.error("Error updating vehicle:", err);
-                            alert("Gagal mengupdate kendaraan. Silakan coba lagi.");
-                        });
-                    }
-                }}
+                onSubmit={handleEditVehicle}
             />
 
             {/* Dialog untuk tambah model kendaraan */}
