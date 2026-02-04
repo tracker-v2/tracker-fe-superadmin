@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
@@ -25,7 +24,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     /* Paths */
-    "baseUrl": ".",
+    "rootDir": ".",
     "paths": {
       "@/*": [
         "./src/*"

@@ -57,7 +57,7 @@ export function VehicleMaintenanceFormCreate({ children, ref, onSuccess }: Vehic
     // Fetch vehicle detail when vehicleId changes
     const { data: vehicleDetail } = useSWR(
         vehicleId ? ['/vehicle-detail', vehicleId] : null,
-        ([, id]) => getVehicleDetail(id)
+        ([, id]) => getVehicleDetail(id, companyId!)
     )
 
     // Get vehicle type from database

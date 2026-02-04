@@ -9,12 +9,18 @@ import { updateCompanyApi } from "@/api/companies";
 interface Organization {
     id: number;
     name: string;
-    industry: string;
-    unitCount: number;
-    phone: string;
+    industryType?: string;
+    industry?: string;
+    unitCount?: number;
+    phoneNumber?: string;
+    phone?: string;
     email: string;
     address: string;
-    logo: string;
+    logo?: string;
+    picName?: string;
+    picPhone?: string;
+    picEmail?: string;
+    isActive?: boolean;
 }
 
 interface DialogOrganisasiEditProps {
@@ -46,8 +52,8 @@ export default function DialogOrganisasiEdit({ open, organization, onClose, onSu
             setForm({
                 nama: organization.name || "",
                 email: organization.email || "",
-                telepon: organization.phone || "",
-                tipeIndustri: organization.industry || "",
+                telepon: organization.phoneNumber || organization.phone || "",
+                tipeIndustri: organization.industryType || organization.industry || "",
                 alamat: organization.address || "",
                 pjNama: "", // Add default or from organization if available
                 pjEmail: "",
