@@ -74,11 +74,20 @@ export const toggleVehicleStarter = async (
   return res.data;
 };
 
+// API GET
+
 // api to get detailed list of vehicles by company - super admin
 export const getDetailedListVehiclesByCompany = async (companyId: number) => {
   const res = await axios.get(`vehicles/list/sa/${companyId}/detailed`);
   return res.data.data;
 };
+
+export const getVehicleByMarkingNumber = async (markingNumber: string, companyId: number) => {
+  const res = await axios.get(`vehicles/marking-number/${markingNumber}`, {
+    params: { companyId }
+  });
+  return res.data.data;
+}
 
 // count company - super admin
 
@@ -96,12 +105,6 @@ export const deleteVehicleById = async (vehicleId: number) => {
   const res = await axios.delete(`vehicles/${vehicleId}`);
   return res.data;
 }
-
-// Vehicles API
-// export const editVehiclesById = async (vehicleId: number, vehicleData: object) => {
-//   const res = await axios.put(`vehicles/${vehicleId}`, vehicleData);
-//   return res.data;
-// }
 
 // Edit Vehicle Super Admin
 export const editVehicleSuperAdmin = async (vehicleId: number, companyId: number, vehicleData: object) => {
@@ -137,3 +140,21 @@ export const deleteVehicleModelById = async (modelId: number) => {
   const res = await axios.delete(`vehicles/models/${modelId}`);
   return res.data;
 }
+
+// POST VEHICLE API
+
+// superadmin then integrate with maximus vehicles (DB Live)
+export const addVehicleSuperAdmin = async (vehicleData: {
+  vehicleModelId: number;
+  companyId: number;
+  licensePlate: string;
+  image: string;
+  color: string;
+  year: number;
+  frameNumber: string;
+  engineNumber: string;
+  marking_number: string;
+}) => {
+  const res = await axios.post(`vehicles/superadmin`, vehicleData);
+  return res.data;
+};
