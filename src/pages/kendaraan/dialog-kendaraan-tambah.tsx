@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,85 +12,164 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { getVehicleModels } from "@/api/vehicle-models";
+import { addVehicleSuperAdmin } from "@/api/vehicle";
+import { toast } from "sonner";
+import { KendaraanFormData } from "@/pages/kendaraan/types";
 
 interface DialogKendaraanTambahProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit?: (data: KendaraanFormData) => void;
+  companyId: number;
 }
 
-interface KendaraanFormData {
-  licensePlate: string;
-  description: string;
+interface VehicleModel {
+  id: number;
   vehicleType: string;
-  odometer: string;
-  tankCapacity: string;
-  frameNumber: string;
-  engineNumber: string;
-  color: string;
-  year: number;
   brand: string;
   model: string;
-  markingNumber: string;
-  hasFuel: boolean;
-  hasOnOff: boolean;
-  fuelCalibration: string;
 }
 
 const initialFormData: KendaraanFormData = {
   licensePlate: "",
   description: "",
-  vehicleType: "",
-  odometer: "",
-  tankCapacity: "",
+  vehicleModelId: 0,
   frameNumber: "",
   engineNumber: "",
   color: "",
   year: 0,
-  brand: "",
-  model: "",
   markingNumber: "",
-  hasFuel: false,
-  hasOnOff: false,
-  fuelCalibration: "",
+  image: "",
 };
 
 export function DialogKendaraanTambah({
   open,
   onOpenChange,
   onSubmit,
+  companyId,
 }: DialogKendaraanTambahProps) {
   const [formData, setFormData] = useState<KendaraanFormData>(initialFormData);
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch vehicle models when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchVehicleModels();
+    }
+  }, [open]);
+
+  const fetchVehicleModels = async () => {
+    try {
+      setLoading(true);
+      const data = await getVehicleModels();
+      setVehicleModels(data);
+    } catch (error) {
+      console.error("Failed to fetch vehicle models:", error);
+      toast.error("Gagal memuat model kendaraan");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "year" ? Number(value) : value,
     }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "vehicleModelId" ? Number(value) : value,
     }));
   };
 
-  const handleCheckboxChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit?.(formData);
-    setFormData(initialFormData);
-    onOpenChange(false);
+
+    // Validation
+    if (!formData.vehicleModelId) {
+      toast.error("Pilih model kendaraan terlebih dahulu");
+      return;
+    }
+
+    if (!formData.licensePlate.trim()) {
+      toast.error("Plat nomor/ID kendaraan tidak boleh kosong");
+      return;
+    }
+
+    if (!formData.frameNumber.trim()) {
+      toast.error("Nomor rangka tidak boleh kosong");
+      return;
+    }
+
+    if (!formData.engineNumber.trim()) {
+      toast.error("Nomor mesin tidak boleh kosong");
+      return;
+    }
+
+    if (!formData.color.trim()) {
+      toast.error("Warna kendaraan tidak boleh kosong");
+      return;
+    }
+
+    if (!formData.year || formData.year <= 0) {
+      toast.error("Tahun pembuatan harus valid");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast.loading("Menambahkan kendaraan...");
+
+    try {
+      const payload = {
+        vehicleModelId: formData.vehicleModelId,
+        companyId: companyId,
+        licensePlate: formData.licensePlate,
+        image: formData.image || "",
+        color: formData.color,
+        year: formData.year,
+        frameNumber: formData.frameNumber,
+        engineNumber: formData.engineNumber,
+        marking_number: formData.markingNumber,
+      };
+
+      console.log("Sending payload:", payload);
+
+      await addVehicleSuperAdmin(payload);
+
+      toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
+      setFormData(initialFormData);
+      onOpenChange(false);
+      onSubmit?.(formData);
+    } catch (error: unknown) {
+      console.error("Error adding vehicle:", error);
+
+      // Get detailed error message from backend
+      let errorMessage = "Gagal menambahkan kendaraan. Silakan coba lagi.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const axiosError = error as Record<string, any>;
+        errorMessage = axiosError?.response?.data?.message ||
+          axiosError?.response?.data?.error ||
+          errorMessage;
+      }
+
+      console.error("Error response:", error);
+
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -103,7 +182,7 @@ export function DialogKendaraanTambah({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
-            Detail Kendaraan
+            Tambah Kendaraan
           </h2>
         </DialogHeader>
 
@@ -143,63 +222,51 @@ export function DialogKendaraanTambah({
               </div>
 
               <div>
-                <Label htmlFor="vehicleType" className="text-sm font-medium">
-                  Tipe Kendaraan
+                <Label htmlFor="vehicleModelId" className="text-sm font-medium">
+                  Model Kendaraan
                 </Label>
                 <Select
-                  value={formData.vehicleType}
-                  onValueChange={(value) => handleSelectChange("vehicleType", value)}
+                  value={(formData.vehicleModelId || 0).toString()}
+                  onValueChange={(value) => handleSelectChange("vehicleModelId", value)}
+                  disabled={loading}
                 >
                   <SelectTrigger className="mt-1 text-sm font-semibold bg-white">
-                    <SelectValue placeholder="Pilih tipe kendaraan" />
+                    <SelectValue placeholder="Pilih model kendaraan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mobil-penumpang">Mobil Penumpang</SelectItem>
-                    <SelectItem value="mobil-beban">Mobil Beban</SelectItem>
-                    <SelectItem value="pickup-truck">Pickup Truck</SelectItem>
-                    <SelectItem value="dump-truck">Dump Truck</SelectItem>
-                    <SelectItem value="excavator">Excavator</SelectItem>
-                    <SelectItem value="bulldozer">Bulldozer</SelectItem>
-                    <SelectItem value="wheel-loader">Wheel Loader</SelectItem>
-                    <SelectItem value="grader">Grader</SelectItem>
-                    <SelectItem value="road-roller">Road Roller</SelectItem>
+                    {vehicleModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id.toString()}>
+                        {model.vehicleType} - {model.brand} - {model.model}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
 
-          {/* Specifications Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="odometer" className="text-sm font-medium">
-                Odometer/Hourmeter
-              </Label>
-              <Input
-                id="odometer"
-                name="odometer"
-                placeholder="Masukan angka odometer/hourmeter"
-                value={formData.odometer}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="tankCapacity" className="text-sm font-medium">
-                Kapasitas Tangki
-              </Label>
-              <Input
-                id="tankCapacity"
-                name="tankCapacity"
-                placeholder="Masukan angka kapasitas tangki"
-                value={formData.tankCapacity}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-              />
-            {/* <span className="right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">L</span> */}
-            </div>
-          </div>
+          {/* Display Selected Model Info */}
+          {(() => {
+            const selected = vehicleModels.find((m) => m.id === formData.vehicleModelId);
+            return selected ? (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600 font-medium">Tipe</p>
+                    <p className="text-gray-900">{selected.vehicleType}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 font-medium">Merk</p>
+                    <p className="text-gray-900">{selected.brand}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 font-medium">Model</p>
+                    <p className="text-gray-900">{selected.model}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null;
+          })()}
 
           {/* Vehicle Details Row */}
           <div className="grid grid-cols-3 gap-4">
@@ -247,7 +314,8 @@ export function DialogKendaraanTambah({
           </div>
 
           {/* Vehicle Year, Brand, Model Row */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Vehicle Year and Marking Number Row */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="year" className="text-sm font-medium">
                 Tahun
@@ -255,6 +323,7 @@ export function DialogKendaraanTambah({
               <Input
                 id="year"
                 name="year"
+                type="number"
                 placeholder="Masukan tahun pembuatan"
                 value={formData.year}
                 onChange={handleInputChange}
@@ -263,106 +332,35 @@ export function DialogKendaraanTambah({
             </div>
 
             <div>
-              <Label htmlFor="brand" className="text-sm font-medium">
-                Merk
+              <Label htmlFor="markingNumber" className="text-sm font-medium">
+                Marking Number
               </Label>
               <Input
-                id="brand"
-                name="brand"
-                placeholder="Masukan merk"
-                value={formData.brand}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="model" className="text-sm font-medium">
-                Model
-              </Label>
-              <Input
-                id="model"
-                name="model"
-                placeholder="Masukan model"
-                value={formData.model}
+                id="markingNumber"
+                name="markingNumber"
+                placeholder="Masukan marking number"
+                value={formData.markingNumber}
                 onChange={handleInputChange}
                 className="mt-1 text-sm bg-white"
               />
             </div>
           </div>
 
-          {/* Marking Number */}
+          {/* Image String */}
           <div>
-            <Label htmlFor="markingNumber" className="text-sm font-medium">
-              Marking Number
+            <Label htmlFor="image" className="text-sm font-medium">
+              Gambar Kendaraan
             </Label>
             <Input
-              id="markingNumber"
-              name="markingNumber"
-              placeholder="Masukan marking number"
-              value={formData.markingNumber}
+              id="image"
+              name="image"
+              type="text"
+              placeholder="Masukan URL atau identitas gambar kendaraan"
+              value={formData.image}
               onChange={handleInputChange}
               className="mt-1 text-sm bg-white"
             />
           </div>
-          
-          {/* Additional Info Section */}
-        <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-            Info Tambahan
-        </h3>
-        
-        <div className="flex gap-8">
-            {/* Left Side - Fitur */}
-            <div className="flex-1">
-            <Label className="text-sm font-medium mb-3 block">
-                Fitur
-            </Label>
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                <Checkbox
-                    id="hasFuel"
-                    checked={formData.hasFuel}
-                    onCheckedChange={(checked) =>
-                    handleCheckboxChange("hasFuel", checked as boolean)
-                    }
-                />
-                <Label htmlFor="hasFuel" className="text-sm font-medium cursor-pointer">
-                    Fuel
-                </Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                <Checkbox
-                    id="hasOnOff"
-                    checked={formData.hasOnOff}
-                    onCheckedChange={(checked) =>
-                    handleCheckboxChange("hasOnOff", checked as boolean)
-                    }
-                />
-                <Label htmlFor="hasOnOff" className="text-sm font-medium cursor-pointer">
-                    On/Off
-                </Label>
-                </div>
-            </div>
-            </div>
-
-            {/* Right Side - Kalibrasi Fuel */}
-            <div className="flex-1">
-            <Label htmlFor="fuelCalibration" className="text-sm font-medium">
-                Kalibrasi Fuel
-            </Label>
-            <Input
-                id="fuelCalibration"
-                name="fuelCalibration"
-                placeholder="Masukan koefisien kalibrasi fuel"
-                value={formData.fuelCalibration}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-            />
-            </div>
-        </div>
-        </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6 border-t">
@@ -376,9 +374,10 @@ export function DialogKendaraanTambah({
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-[#6B7BE5] hover:bg-[#5a6bce] text-white"
+              disabled={!formData.vehicleModelId || isSubmitting}
+              className="flex-1 bg-[#6B7BE5] hover:bg-[#5a6bce] text-white disabled:opacity-50"
             >
-              TAMBAH KENDARAAN
+              {isSubmitting ? "Menambahkan..." : "TAMBAH KENDARAAN"}
             </Button>
           </div>
         </form>

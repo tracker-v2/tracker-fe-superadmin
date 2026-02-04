@@ -6,60 +6,13 @@ import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
 import {
-    getDetailedListVehiclesByCompany, 
+    getDetailedListVehiclesByCompany,
     editVehicleSuperAdmin,
     deleteVehicleById
 } from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
 import { toast } from "sonner";
-
-// Import interface dari dialog
-interface KendaraanFormData {
-    licensePlate: string;
-    description: string;
-    vehicleType: string;
-    odometer: string;
-    tankCapacity: string;
-    frameNumber: string;
-    engineNumber: string;
-    color: string;
-    year: number;
-    brand: string;
-    model: string;
-    markingNumber: string;
-    hasFuel: boolean;
-    hasOnOff: boolean;
-    fuelCalibration: string;
-}
-
-interface ModelKendaraanFormData {
-    vehicleType: string;
-    brand: string;
-    model: string;
-    fuelTankCapacity: string;
-    numberOfWheels: string;
-    enginePower: string;
-    torque: string;
-}
-
-// Interface untuk Vehicle (updated dari API detailed)
-interface Vehicle {
-    id: number;
-    companyId: number;
-    licensePlate: string;
-    description: string | null;
-    image: string;
-    vehicleType: string;
-    fuelTank: number;
-    frameNumber: string;
-    engineNumber: string;
-    color: string;
-    year: number;
-    brand: string;
-    model: string;
-    lastOdometer: number;
-    markingNumber: string;
-}
+import { KendaraanFormData, ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 
 // Filter options untuk vehicle types
 const filterOptions = [
@@ -180,10 +133,10 @@ export function ListKendaraanPage() {
         setCurrentPage(page);
     };
 
-    const handleAddVehicle = (data: KendaraanFormData) => {
+    const handleAddVehicle = async (data: KendaraanFormData) => {
         try {
             // Call API to add vehicle
-            axios.post(`/vehicles/${companyId}`, {
+            await axios.post(`/vehicles/${companyId}`, {
                 licensePlate: data.licensePlate,
                 description: data.description,
                 vehicleType: data.vehicleType,
@@ -239,14 +192,14 @@ export function ListKendaraanPage() {
             };
 
             await editVehicleSuperAdmin(
-                selectedVehicle.id, 
-                Number(companyId), 
+                selectedVehicle.id,
+                Number(companyId),
                 vehiclePayload
             );
 
             const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
             setVehicles(updatedVehicles || []);
-            
+
             toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
             setOpenDialogEdit(false);
             setSelectedVehicle(null);
@@ -264,7 +217,7 @@ export function ListKendaraanPage() {
 
         try {
             await deleteVehicleById(vehicleId);
-            
+
             const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
             setVehicles(updatedVehicles || []);
             setOpenMenuId(null);
@@ -313,7 +266,7 @@ export function ListKendaraanPage() {
                         onClick={() => navigate(`/list-odometer/${companyId}`, { state: { company } })}
                         className="px-3 py-1 text-black text-sm rounded-md border hover:bg-gray-300 transition-colors"
                     >
-                        Lihat List Odoo
+                        List Marking Number
                     </button>
                 </div>
                 <button
@@ -592,6 +545,7 @@ export function ListKendaraanPage() {
                 open={openDialog}
                 onOpenChange={setOpenDialog}
                 onSubmit={handleAddVehicle}
+                companyId={Number(companyId)}
             />
 
             {/* Dialog untuk edit kendaraan */}

@@ -25,8 +25,13 @@ interface Vehicle {
     torque?: number;
 }
 
-export function ListModelKendaraan() {
-    const { companyId } = useParams();
+interface ListModelKendaraanProps {
+    companyId?: string;
+}
+
+export function ListModelKendaraan({ companyId: propCompanyId }: ListModelKendaraanProps) {
+    const { companyId: paramCompanyId } = useParams();
+    const companyId = propCompanyId || paramCompanyId;
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);

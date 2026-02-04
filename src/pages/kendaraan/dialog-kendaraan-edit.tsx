@@ -15,24 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-
-interface Vehicle {
-  id: number;
-  companyId: number;
-  licensePlate: string;
-  description: string | null;
-  image: string;
-  vehicleType: string;
-  fuelTank: number;
-  frameNumber: string;
-  engineNumber: string;
-  color: string;
-  year: number;
-  brand: string;
-  model: string;
-  lastOdometer: number;
-  markingNumber: string;
-}
+import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 
 interface DialogKendaraanEditProps {
   open: boolean;
@@ -40,27 +23,6 @@ interface DialogKendaraanEditProps {
   onSubmit?: (data: KendaraanFormData) => void;
   vehicle?: Vehicle | null;
   companyId?: number;
-}
-
-interface KendaraanFormData {
-  vehicleId?: number; // Tambahkan vehicleId
-  licensePlate: string;
-  description: string;
-  vehicleType: string;
-  odometer: string;
-  tankCapacity: string;
-  frameNumber: string;
-  engineNumber: string;
-  color: string;
-  year: number;
-  brand: string;
-  model: string;
-  markingNumber: string;
-  hasFuel: boolean;
-  hasOnOff: boolean;
-  fuelCalibration: string;
-  imei?: string;
-  simNumber?: string;
 }
 
 const initialFormData: KendaraanFormData = {
