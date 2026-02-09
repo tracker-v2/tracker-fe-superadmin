@@ -4,7 +4,20 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Vehicle } from "@/types/types";
 import { FitBoundsToVehicles } from "./focus-vehicle";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getCompaniesApi } from "@/api/companies";
+
+interface Company {
+  id: number;
+  name: string;
+  address: string;
+  email: string;
+  phoneNumber: string;
+  industryType: string;
+  picName: string;
+  picPhone: string;
+  isActive: boolean;
+}
 
 interface VehicleMapProps {
   vehicleLocations: Vehicle[];
@@ -143,12 +156,24 @@ const formatVehicleType = (type: string | undefined) => {
 
 
 const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
-  // Ambil daftar unik perusahaan dari data kendaraan
-  const companyList = Array.from(
-    new Set(vehicleLocations.map((v) => v.company_name).filter(Boolean))
-  );
-
+  const [companyList, setCompanyList] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string | "">("");
+
+  // Fetch companies dari API
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const companies: Company[] = await getCompaniesApi();
+        const companyNames = companies.map((company) => company.name);
+        setCompanyList(companyNames);
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+        setCompanyList([]);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
 
   // Filter kendaraan berdasarkan perusahaan yang dipilih
   const filteredVehicles =

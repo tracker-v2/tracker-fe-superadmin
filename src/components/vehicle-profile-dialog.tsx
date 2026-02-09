@@ -23,6 +23,7 @@ import { getVehicleActivityReport, getVehicleDetail } from "@/api/vehicle";
 import { format } from "date-fns";
 import { useReverseGeocode } from "@/hooks/useReverseGeocode";
 import { useVehicleStore } from "@/store/useVehicleStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // Helper to format vehicle type for display
 function formatVehicleType(type: string | undefined) {
@@ -70,6 +71,11 @@ const getVehicleIconPath = (
 
   return `/assets/icons/icon_${iconName}_${statusSuffix}.webp`;
 };
+
+interface VehicleProfilePageProps {
+  vehicleDetail?: VehicleDetail;
+  vehicleId?: number | null;
+}
 
 interface VehicleProfilePageProps {
   vehicleDetail?: VehicleDetail;
@@ -327,13 +333,15 @@ export default function VehicleProfilePage({
 
   // Fetch vehicle detail 
   useEffect(() => {
+    const companyId = useAuthStore((s) => s.user?.companyId);
+
     const fetchVehicleDetail = async () => {
-      if (!vehicleId || !isOpen) return;
+      if (!vehicleId || !isOpen || !companyId) return;
 
       setIsLoadingDetail(true);
       try {
         console.log("Fetching vehicle detail for:", vehicleId);
-        const data = await getVehicleDetail(vehicleId);
+        const data = await getVehicleDetail(vehicleId, companyId);
         console.log("Vehicle detail received:", data);
         setDetail({
           id: data.id,
