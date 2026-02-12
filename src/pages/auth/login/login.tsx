@@ -34,16 +34,20 @@ export default function LoginPage() {
 
     try {
       const token = await loginApi(email, password);
-      setToken(token);
       const userProfile = await getProfileApi(token);
 
-      // ✅ VALIDASI ROLE SUPER_ADMIN
+      // Debug: lihat data yang dikembalikan API
+      console.log('User Profile:', userProfile);
+      console.log('Role:', userProfile.role);
+
+      // ✅ VALIDASI ROLE SUPER_ADMIN - hanya super_admin yang bisa login
       if (userProfile.role !== 'super_admin') {
         setErrorMessage("Akses ditolak. Anda bukan Super Admin.");
-        setToken("");
         return;
       }
 
+      // Set token dan user hanya setelah validasi role berhasil
+      setToken(token);
       useAuthStore.getState().setUser(userProfile);
       navigate("/dashboard");
     } catch (err: unknown) {
