@@ -449,7 +449,12 @@ export function ListKendaraanPage() {
                                                             <Ellipsis size={18} className="text-gray-600" />
                                                         </button>
                                                         {openMenuId === vehicle.id && (
-                                                            <div className="absolute right-0 mt-1 w-32 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10">
+                                                            <div className={`absolute right-0 mt-1 w-32 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10
+                                                                ${index >= paginatedVehicles.length - 2
+                                                                    ? "bottom-full"
+                                                                    : "top-full"
+                                                                }
+                                                            `}>
                                                                 <button
                                                                     onClick={() => {
                                                                         setSelectedVehicle(vehicle);
