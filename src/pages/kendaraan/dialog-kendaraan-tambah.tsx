@@ -138,6 +138,7 @@ export function DialogKendaraanTambah({
         frameNumber: formData.frameNumber,
         engineNumber: formData.engineNumber,
         marking_number: formData.markingNumber,
+        description: formData.description || "",
       };
 
       console.log("Sending payload:", payload);

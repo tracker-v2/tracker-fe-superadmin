@@ -154,6 +154,7 @@ export const addVehicleSuperAdmin = async (vehicleData: {
   frameNumber: string;
   engineNumber: string;
   marking_number: string;
+  description?: string;
 }) => {
   const res = await axios.post(`vehicles/superadmin`, vehicleData);
   return res.data;
