@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getVehicleDetail } from "@/api/vehicle";
+import { getVehicleDetail, editVehicleSuperAdmin } from "@/api/vehicle";
 import {
   Select,
   SelectContent,
@@ -16,11 +16,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import { toast } from "sonner";
 
 interface DialogKendaraanEditProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit?: (data: KendaraanFormData) => void;
+  onSuccess?: () => void;
   vehicle?: Vehicle | null;
   companyId?: number;
 }
@@ -48,12 +49,13 @@ const initialFormData: KendaraanFormData = {
 export function DialogKendaraanEdit({
   open,
   onOpenChange,
-  onSubmit,
+  onSuccess,
   vehicle,
   companyId,
 }: DialogKendaraanEditProps) {
   const [formData, setFormData] = useState<KendaraanFormData>(initialFormData);
   const [loadingVehicle, setLoadingVehicle] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchVehicleData = useCallback(async (vehicleId: number, compId: number) => {
     if (!vehicleId || !compId) {
@@ -146,11 +148,65 @@ export function DialogKendaraanEdit({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit?.(formData);
-    setFormData(initialFormData);
-    onOpenChange(false);
+
+    if (!vehicle?.id || !companyId) {
+      toast.error("Data kendaraan atau ID perusahaan tidak valid");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast.loading("Menyimpan perubahan...");
+
+    try {
+      const vehiclePayload = {
+        licensePlate: formData.licensePlate,
+        description: formData.description,
+        vehicleType: formData.vehicleType,
+        odometer: formData.odometer,
+        fuelTank: formData.tankCapacity,
+        frameNumber: formData.frameNumber,
+        engineNumber: formData.engineNumber,
+        color: formData.color,
+        year: formData.year,
+        brand: formData.brand,
+        model: formData.model,
+        markingNumber: formData.markingNumber,
+        hasFuel: formData.hasFuel,
+        hasOnOff: formData.hasOnOff,
+        fuelCalibration: formData.fuelCalibration,
+      };
+
+      await editVehicleSuperAdmin(
+        vehicle.id,
+        Number(companyId),
+        vehiclePayload
+      );
+
+      toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
+
+      setFormData(initialFormData);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: unknown) {
+      console.error("Error updating vehicle:", error);
+
+      let errorMessage = "Gagal mengupdate kendaraan. Silakan coba lagi.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const axiosError = error as Record<string, any>;
+        errorMessage = axiosError?.response?.data?.message ||
+          axiosError?.response?.data?.error ||
+          errorMessage;
+      }
+
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -453,9 +509,10 @@ export function DialogKendaraanEdit({
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-[#6B7BE5] hover:bg-[#5a6bce] text-white"
+              disabled={isSubmitting || loadingVehicle}
+              className="flex-1 bg-[#6B7BE5] hover:bg-[#5a6bce] text-white disabled:opacity-50"
             >
-              SIMPAN PERUBAHAN
+              {isSubmitting ? "MENYIMPAN..." : "SIMPAN PERUBAHAN"}
             </Button>
           </div>
         </form>

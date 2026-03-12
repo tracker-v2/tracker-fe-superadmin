@@ -6,12 +6,11 @@ import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
 import {
     getDetailedListVehiclesByCompany,
-    editVehicleSuperAdmin,
     deleteVehicleById
 } from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
 import { toast } from "sonner";
-import { KendaraanFormData, ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import { ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 
 // Filter options untuk vehicle types
 const filterOptions = [
@@ -158,52 +157,6 @@ export function ListKendaraanPage() {
             console.error("Gagal refresh data:", err);
         }
     };
-
-    const handleEditVehicle = async (data: KendaraanFormData) => {
-        if (!selectedVehicle || !companyId) {
-            toast.error("Data kendaraan atau ID perusahaan tidak valid");
-            return;
-        }
-
-        const toastId = toast.loading("Menyimpan perubahan...");
-
-        try {
-            const vehiclePayload = {
-                licensePlate: data.licensePlate,
-                description: data.description,
-                vehicleType: data.vehicleType,
-                odometer: data.odometer,
-                fuelTank: data.tankCapacity,
-                frameNumber: data.frameNumber,
-                engineNumber: data.engineNumber,
-                color: data.color,
-                year: data.year,
-                brand: data.brand,
-                model: data.model,
-                markingNumber: data.markingNumber,
-                hasFuel: data.hasFuel,
-                hasOnOff: data.hasOnOff,
-                fuelCalibration: data.fuelCalibration,
-            };
-
-            await editVehicleSuperAdmin(
-                selectedVehicle.id,
-                Number(companyId),
-                vehiclePayload
-            );
-
-            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
-            setVehicles(updatedVehicles || []);
-
-            toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
-            setOpenDialogEdit(false);
-            setSelectedVehicle(null);
-
-        } catch (err) {
-            console.error("Error updating vehicle:", err);
-            toast.error("Gagal mengupdate kendaraan. Silakan coba lagi.", { id: toastId });
-        }
-    }
 
     const handleDeleteVehicle = async (vehicleId: number) => {
         if (!confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) return;
@@ -551,10 +504,13 @@ export function ListKendaraanPage() {
             {/* Dialog untuk edit kendaraan */}
             <DialogKendaraanEdit
                 open={openDialogEdit}
-                onOpenChange={setOpenDialogEdit}
+                onOpenChange={(isOpen) => {
+                    setOpenDialogEdit(isOpen);
+                    if (!isOpen) setSelectedVehicle(null);
+                }}
                 vehicle={selectedVehicle}
                 companyId={Number(companyId)}
-                onSubmit={handleEditVehicle}
+                onSuccess={fetchVehiclesList}
             />
 
             {/* Dialog untuk tambah model kendaraan */}

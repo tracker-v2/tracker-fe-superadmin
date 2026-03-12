@@ -124,7 +124,7 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.image.trim()) {
+    if (!formData.image?.trim()) {
       toast.error("Gambar kendaraan tidak boleh kosong");
       return;
     }
@@ -137,7 +137,7 @@ export function DialogKendaraanTambah({
         vehicleModelId: formData.vehicleModelId,
         companyId: companyId,
         licensePlate: formData.licensePlate,
-        image: formData.image,
+        image: formData.image || "",
         color: formData.color,
         year: formData.year,
         frameNumber: formData.frameNumber,
