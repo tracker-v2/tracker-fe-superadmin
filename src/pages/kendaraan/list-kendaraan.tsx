@@ -75,6 +75,24 @@ export function ListKendaraanPage() {
         }
     }, [companyId]);
 
+    // Add click outside listener for action button menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (!target.closest('.dropdown-action-container')) {
+                setOpenMenuId(null);
+            }
+        };
+
+        if (openMenuId !== null) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [openMenuId]);
+
     // Get unique vehicle types and their counts from data
     const vehicleTypes = useMemo(() => {
         const types: Record<string, number> = { semua: vehicles.length };
@@ -441,7 +459,7 @@ export function ListKendaraanPage() {
                                                     {vehicle.markingNumber || "-"}
                                                 </td>
                                                 <td className="px-6 py-3 text-sm text-gray-600">
-                                                    <div className="relative">
+                                                    <div className="relative dropdown-action-container">
                                                         <button
                                                             onClick={() => setOpenMenuId(openMenuId === vehicle.id ? null : vehicle.id)}
                                                             className="p-1 hover:bg-gray-200 rounded transition-colors"
