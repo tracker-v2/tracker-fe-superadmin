@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Search, Plus, Trash2, SquarePen, Ellipsis } from "lucide-react";
-import axios from "@/lib/axios";
 import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah";
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
@@ -151,34 +150,12 @@ export function ListKendaraanPage() {
         setCurrentPage(page);
     };
 
-    const handleAddVehicle = async (data: KendaraanFormData) => {
+    const fetchVehiclesList = async () => {
         try {
-            // Call API to add vehicle
-            await axios.post(`/vehicles/${companyId}`, {
-                licensePlate: data.licensePlate,
-                description: data.description,
-                vehicleType: data.vehicleType,
-                odometer: data.odometer,
-                fuelTank: data.tankCapacity,
-                frameNumber: data.frameNumber,
-                engineNumber: data.engineNumber,
-                color: data.color,
-                year: data.year,
-                brand: data.brand,
-                model: data.model,
-                markingNumber: data.markingNumber,
-                hasFuel: data.hasFuel,
-                hasOnOff: data.hasOnOff,
-                fuelCalibration: data.fuelCalibration,
-            }).then(() => {
-                // Refresh the list dengan API detailed
-                getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                    setVehicles(updatedVehicles || []);
-                });
-            });
+            const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
+            setVehicles(updatedVehicles || []);
         } catch (err) {
-            console.error("Error adding vehicle:", err);
-            alert("Gagal menambah kendaraan. Silakan coba lagi.");
+            console.error("Gagal refresh data:", err);
         }
     };
 
@@ -567,8 +544,8 @@ export function ListKendaraanPage() {
             <DialogKendaraanTambah
                 open={openDialog}
                 onOpenChange={setOpenDialog}
-                onSubmit={handleAddVehicle}
                 companyId={Number(companyId)}
+                onSuccess={fetchVehiclesList}
             />
 
             {/* Dialog untuk edit kendaraan */}

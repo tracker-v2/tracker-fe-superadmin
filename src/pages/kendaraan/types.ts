@@ -18,7 +18,7 @@ export interface KendaraanFormData {
   hasOnOff?: boolean;
   fuelCalibration?: string;
   vehicleModelId?: number;
-  image?: string;
+  image: string;
   imei?: string;
   simNumber?: string;
 }
