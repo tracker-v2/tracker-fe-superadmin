@@ -1,13 +1,13 @@
 export interface Vehicle {
-  logs_data: any;
+  logs_data: Record<string, unknown>;
   id: number;
   lat: number;
   lng: number;
   license_plate: string;
   status: "active" | "idle" | "inactive";
-  company_name?: string;  // ✅ Tambahan
-  brand?: string;         // ✅ Tambahan
-  model?: string;         // ✅ Tambahan
+  company_name?: string;
+  brand?: string;       
+  model?: string;       
   odometer?: string; 
   hourmeter?: string; 
   vehicle_type?: string; 
@@ -25,9 +25,9 @@ export interface VehicleApiResponse {
   vehicle_type?: string;
   vehicle_id: number;
   license_plate: string;
-  company_name: string;    // ✅ Tambahkan
-  brand: string;           // ✅ Tambahkan
-  model: string;           // ✅ Tambahkan
+  company_name: string;
+  brand: string;       
+  model: string;       
   logs_data: {
     hourmeter?: string;
     odometer?: string;
@@ -101,4 +101,101 @@ export interface VehicleDetail {
   model?: string;
   image?: string;
   lastOdometer?:number;
+}
+
+// Device Types
+export interface DeviceModel {
+  id: number;
+  model: string;
+  brand: string;
+}
+
+export interface DeviceVehicle {
+  id: number;
+  name: string;
+}
+// Device Enums
+export type CommunicationType = "GSM";
+export type IdentifierType = "IMEI" | "ICCID"; // Atau type lain sesuai backend
+
+// Device Feature
+export interface DeviceFeature {
+  id: number;
+  deviceId: number;
+  featureId: number;
+  deviceModelPinoutId: number;
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
+// Device GSM
+export interface DeviceGsm {
+  id: number;
+  deviceId: number;
+  simNumber: string;
+  simProvider: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
+// Device Identifier
+export interface DeviceIdentifier {
+  id: number;
+  deviceId: number;
+  identifierType: IdentifierType;
+  value: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
+// Device Model
+export interface DeviceModel {
+  id: number;
+  model: string;
+  brand: string;
+}
+
+// Device Vehicle
+export interface DeviceVehicle {
+  id: number;
+  name: string;
+}
+
+// Device - Basic (untuk list view)
+export interface Device {
+  id: number;
+  name: string;
+  communicationType: CommunicationType;
+  isActive: boolean;
+  deviceModelId: number;
+  vehicleId: number;
+  createdAt?: Date;
+  updatedAt?: Date | null;
+}
+
+// Device Detail - Extended (dengan relasi)
+export interface DeviceDetail extends Device {
+  deviceModel: DeviceModel;
+  vehicle: DeviceVehicle;
+  deviceFeatures: DeviceFeature[];
+  deviceGsm: DeviceGsm[];
+  deviceIdentifiers: DeviceIdentifier[];
+}
+
+// Create Request
+export interface CreateDeviceRequest {
+  name: string;
+  communicationType: CommunicationType;
+  deviceModelId: number;
+  vehicleId: number;
+  isActive?: boolean;
+}
+
+// Update Request
+export interface UpdateDeviceRequest {
+  name?: string;
+  communicationType?: CommunicationType;
+  deviceModelId?: number;
+  vehicleId?: number;
+  isActive?: boolean;
 }
