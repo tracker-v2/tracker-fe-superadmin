@@ -32,6 +32,13 @@ export const getLicensePlate = async (companyId: number) => {
   return res.data.data;
 };
 
+// api get all vehicle
+export const getAllVehicle = async () => {
+  const res = await axios.get(`vehicles/`);
+  // console.log("res", res)
+  return res.data.data;
+};
+
 //api for get route vehicle
 export const getRouteVehicle = async (vehicleId: number, date: string) => {
   const res = await axios.get(`vehicles/${vehicleId}/routes`, { params: { date } });

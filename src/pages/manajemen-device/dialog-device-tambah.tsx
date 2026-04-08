@@ -24,8 +24,8 @@ import { cn } from '@/lib/utils'
 import useSWR from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { createDeviceApi, getDeviceModelsApi } from '@/api/device'
-import { getLicensePlate } from '@/api/vehicle'
-import { useAuthStore } from '@/store/useAuthStore'
+import { getAllVehicle } from '@/api/vehicle'
+// import { useAuthStore } from '@/store/useAuthStore'
 import { toast } from 'sonner'
 import { PropsWithChildren } from 'react'
 import { AxiosError } from 'axios'
@@ -49,7 +49,7 @@ export function DialogDeviceTambah({
 }: PropsWithChildren<{ onSuccess?: VoidFunction }>) {
     const [open, setOpen] = useState(false)
     const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false)
-    const companyId = useAuthStore((s) => s.user?.companyId)
+    // const companyId = useAuthStore((s) => s.user?.companyId)
 
     // Fetch device models
     const { data: deviceModels, isLoading: isLoadingModels } = useSWR<DeviceModelOption[]>(
@@ -59,8 +59,8 @@ export function DialogDeviceTambah({
 
     // Fetch vehicles
     const { data: vehicles, isLoading: isLoadingVehicles } = useSWR<VehicleOption[]>(
-        companyId ? ['/vehicles/license-plates', companyId] : null,
-        ([, id]: [string, number]) => getLicensePlate(Number(id))
+        '/vehicles',
+        getAllVehicle
     )
 
     // SWR Mutation for creating device
