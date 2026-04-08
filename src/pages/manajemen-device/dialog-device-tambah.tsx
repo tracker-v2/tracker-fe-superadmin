@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -17,7 +17,10 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import useSWR from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { createDeviceApi, getDeviceModelsApi } from '@/api/device'
@@ -45,6 +48,7 @@ export function DialogDeviceTambah({
     onSuccess,
 }: PropsWithChildren<{ onSuccess?: VoidFunction }>) {
     const [open, setOpen] = useState(false)
+    const [vehiclePopoverOpen, setVehiclePopoverOpen] = useState(false)
     const companyId = useAuthStore((s) => s.user?.companyId)
 
     // Fetch device models
@@ -89,30 +93,14 @@ export function DialogDeviceTambah({
         },
     })
 
-    // State untuk search dengan debounce
-    const [searchVehicle, setSearchVehicle] = useState('')
-    const [debouncedSearchVehicle, setDebouncedSearchVehicle] = useState('')
 
-    // Debounce search vehicle dengan delay 300ms
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearchVehicle(searchVehicle)
-        }, 300)
-        return () => clearTimeout(timer)
-    }, [searchVehicle])
 
     // Filter device models - tanpa search, tampilkan semua
     const filteredModels = useMemo<DeviceModelOption[]>(() => {
         return deviceModels ?? []
     }, [deviceModels])
 
-    // Filter vehicles
-    const filteredVehicles = useMemo<VehicleOption[]>(() => {
-        if (!debouncedSearchVehicle) return vehicles ?? []
-        return (vehicles ?? []).filter((item) =>
-            item.licensePlate.toLowerCase().includes(debouncedSearchVehicle.toLowerCase())
-        )
-    }, [vehicles, debouncedSearchVehicle])
+
 
     const handleSubmit = async (values: FormSchema) => {
         console.log('📝 Form submitted with values:', values)
@@ -137,7 +125,16 @@ export function DialogDeviceTambah({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent aria-description="Tambah Device" className="max-w-[640px] bg-white" type="right">
+            <DialogContent
+                aria-description="Tambah Device"
+                className="max-w-[640px] bg-white"
+                type="right"
+                onInteractOutside={(e) => {
+                    if (vehiclePopoverOpen) {
+                        e.preventDefault()
+                    }
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>Tambah Device</DialogTitle>
                     <DialogDescription>Isikan data device</DialogDescription>
@@ -176,7 +173,7 @@ export function DialogDeviceTambah({
                                         onValueChange={(newValue) => {
                                             field.onChange(Number(newValue))
                                         }}
-                                        value={field.value?.toString() || ''}
+                                        value={field.value ? field.value.toString() : undefined}
                                     >
                                         <FormControl>
                                             <SelectTrigger className="bg-inherit">
@@ -213,57 +210,68 @@ export function DialogDeviceTambah({
                             control={form.control}
                             name="vehicleId"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="flex flex-col">
                                     <FormLabel className="text-gray-600">Kendaraan</FormLabel>
-                                    <Select
-                                        disabled={isLoadingVehicles || isMutating}
-                                        onValueChange={(newValue) => {
-                                            field.onChange(Number(newValue))
-                                        }}
-                                        value={field.value?.toString() || ''}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger className="bg-inherit">
-                                                <SelectValue placeholder="Cari atau pilih kendaraan..." />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent className="p-0">
-                                            <div className="p-2 border-b border-gray-200 bg-white">
-                                                <Input
-                                                    placeholder="Cari Plat..."
-                                                    value={searchVehicle}
-                                                    onChange={(e) => setSearchVehicle(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        e.stopPropagation()
-                                                        // Allow arrow keys, enter, etc
-                                                        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
-                                                            e.preventDefault()
-                                                        }
-                                                    }}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    className="mb-1"
-                                                />
-                                            </div>
-                                            <div className="max-h-[300px] overflow-y-auto">
-                                                {isLoadingVehicles ? (
-                                                    <div className="py-6 text-center text-sm text-gray-500">
-                                                        Loading...
-                                                    </div>
-                                                ) : filteredVehicles.length === 0 ? (
-                                                    <div className="py-6 text-center text-sm text-gray-500">
-                                                        {debouncedSearchVehicle ? 'Kendaraan tidak ditemukan' : 'Tidak ada kendaraan'}
-                                                    </div>
-                                                ) : (
-                                                    filteredVehicles.map((item) => (
-                                                        <SelectItem key={item.id} value={item.id.toString()}>
-                                                            {item.licensePlate}
-                                                        </SelectItem>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover modal={true} open={vehiclePopoverOpen} onOpenChange={setVehiclePopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={vehiclePopoverOpen}
+                                                    disabled={isLoadingVehicles || isMutating}
+                                                    className={cn(
+                                                        "w-full justify-between bg-inherit font-normal",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {field.value
+                                                        ? vehicles?.find((v) => v.id === field.value)?.licensePlate
+                                                        : "Cari atau pilih kendaraan..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="p-0"
+                                            style={{ width: 'var(--radix-popover-trigger-width)' }}
+                                        >
+                                            <Command>
+                                                <CommandInput placeholder="Cari Plat..." />
+                                                <CommandList>
+                                                    {isLoadingVehicles ? (
+                                                        <div className="py-6 text-center text-sm text-gray-500">
+                                                            Loading...
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <CommandEmpty>Kendaraan tidak ditemukan</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {(vehicles ?? []).map((item) => (
+                                                                    <CommandItem
+                                                                        key={item.id}
+                                                                        value={item.licensePlate}
+                                                                        onSelect={() => {
+                                                                            field.onChange(item.id)
+                                                                            setVehiclePopoverOpen(false)
+                                                                        }}
+                                                                    >
+                                                                        <Check
+                                                                            className={cn(
+                                                                                "mr-2 h-4 w-4",
+                                                                                field.value === item.id ? "opacity-100" : "opacity-0"
+                                                                            )}
+                                                                        />
+                                                                        {item.licensePlate}
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </>
+                                                    )}
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <FormMessage />
                                 </FormItem>
                             )}
