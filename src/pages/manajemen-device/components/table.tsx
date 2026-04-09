@@ -8,6 +8,8 @@ import { Ref, forwardRef, useMemo, useImperativeHandle } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import dayjs from "dayjs";
 import { getPaginatedItems, type PaginationInfo } from "@/lib/pagination";
+import { DialogDeviceEdit } from "../dialog-device-edit";
+import { DialogDeviceHapus } from "../dialog-device-hapus";
 
 export interface DeviceTableRef {
     refresh: VoidFunction;
@@ -93,38 +95,48 @@ const DeviceTable = forwardRef<DeviceTableRef, DeviceTableProps>(
                     header: "Aksi",
                     cell: ({ row }) => (
                         <div className="flex items-center justify-center gap-2">
-                            <Button
-                                onClick={() => handleEdit(row.original)}
-                                className="bg-transparent hover:bg-transparent border border-blue-900 h-9 w-9 text-blue-900 hover:bg-gray-200 rounded"
-                                size="sm"
+                            {/* EDIT BUTTON */}
+                            <DialogDeviceEdit
+                                device={{
+                                    id: row.original.id,
+                                    name: row.original.name,
+                                    deviceModelId: row.original.deviceModelId,
+                                    vehicleId: row.original.vehicleId,
+                                    communicationType: row.original.communicationType,
+                                    isActive: row.original.isActive,
+                                }}
+                                onSuccess={onRefresh}
                             >
-                                <Pencil size={16} />
-                            </Button>
-                            <Button
-                                onClick={() => handleDelete(row.original)}
-                                className="bg-transparent hover:bg-transparent border border-destructive h-9 w-9 text-destructive hover:bg-gray-200 rounded"
-                                size="sm"
+                                <Button
+                                    className="bg-transparent hover:bg-transparent border border-blue-900 h-9 w-9 text-blue-900 hover:bg-gray-200 rounded"
+                                    size="sm"
+                                >
+                                    <Pencil size={16} />
+                                </Button>
+                            </DialogDeviceEdit>
+
+                            {/* DELETE BUTTON */}
+                            <DialogDeviceHapus
+                                deviceId={row.original.id}
+                                deviceName={row.original.name}
+                                onSuccess={onRefresh}
                             >
-                                <Trash2 size={16} />
-                            </Button>
+                                <Button
+                                    className="bg-transparent hover:bg-transparent border border-destructive h-9 w-9 text-destructive hover:bg-gray-200 rounded"
+                                    size="sm"
+                                >
+                                    <Trash2 size={16} />
+                                </Button>
+                            </DialogDeviceHapus>
                         </div>
                     ),
                     enableSorting: false,
                     enableHiding: false,
                 },
             ],
-            []
+            [onRefresh]
         );
 
-        const handleEdit = (device: Device) => {
-            // TODO: Open dialog edit device
-            console.log("Edit device:", device);
-        };
-
-        const handleDelete = (device: Device) => {
-            // TODO: Open dialog delete device
-            console.log("Delete device:", device);
-        };
 
         // Get paginated data
         const paginatedData = useMemo(() => {
