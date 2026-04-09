@@ -1,18 +1,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Search, Plus, Trash2, SquarePen, Ellipsis } from "lucide-react";
-import axios from "@/lib/axios";
 import { DialogKendaraanTambah } from "@/pages/kendaraan/dialog-kendaraan-tambah";
 import { DialogKendaraanEdit } from "@/pages/kendaraan/dialog-kendaraan-edit";
 import { DialogModelKendaraanTambah } from "@/pages/kendaraan/dialog-model-kendaraan-tambah";
 import {
     getDetailedListVehiclesByCompany,
-    editVehicleSuperAdmin,
     deleteVehicleById
 } from "@/api/vehicle";
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
 import { toast } from "sonner";
-import { KendaraanFormData, ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import { ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 
 // Filter options untuk vehicle types
 const filterOptions = [
@@ -75,6 +73,24 @@ export function ListKendaraanPage() {
         }
     }, [companyId]);
 
+    // Add click outside listener for action button menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (!target.closest('.dropdown-action-container')) {
+                setOpenMenuId(null);
+            }
+        };
+
+        if (openMenuId !== null) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [openMenuId]);
+
     // Get unique vehicle types and their counts from data
     const vehicleTypes = useMemo(() => {
         const types: Record<string, number> = { semua: vehicles.length };
@@ -133,82 +149,14 @@ export function ListKendaraanPage() {
         setCurrentPage(page);
     };
 
-    const handleAddVehicle = async (data: KendaraanFormData) => {
+    const fetchVehiclesList = async () => {
         try {
-            // Call API to add vehicle
-            await axios.post(`/vehicles/${companyId}`, {
-                licensePlate: data.licensePlate,
-                description: data.description,
-                vehicleType: data.vehicleType,
-                odometer: data.odometer,
-                fuelTank: data.tankCapacity,
-                frameNumber: data.frameNumber,
-                engineNumber: data.engineNumber,
-                color: data.color,
-                year: data.year,
-                brand: data.brand,
-                model: data.model,
-                markingNumber: data.markingNumber,
-                hasFuel: data.hasFuel,
-                hasOnOff: data.hasOnOff,
-                fuelCalibration: data.fuelCalibration,
-            }).then(() => {
-                // Refresh the list dengan API detailed
-                getDetailedListVehiclesByCompany(Number(companyId)).then((updatedVehicles) => {
-                    setVehicles(updatedVehicles || []);
-                });
-            });
-        } catch (err) {
-            console.error("Error adding vehicle:", err);
-            alert("Gagal menambah kendaraan. Silakan coba lagi.");
-        }
-    };
-
-    const handleEditVehicle = async (data: KendaraanFormData) => {
-        if (!selectedVehicle || !companyId) {
-            toast.error("Data kendaraan atau ID perusahaan tidak valid");
-            return;
-        }
-
-        const toastId = toast.loading("Menyimpan perubahan...");
-
-        try {
-            const vehiclePayload = {
-                licensePlate: data.licensePlate,
-                description: data.description,
-                vehicleType: data.vehicleType,
-                odometer: data.odometer,
-                fuelTank: data.tankCapacity,
-                frameNumber: data.frameNumber,
-                engineNumber: data.engineNumber,
-                color: data.color,
-                year: data.year,
-                brand: data.brand,
-                model: data.model,
-                markingNumber: data.markingNumber,
-                hasFuel: data.hasFuel,
-                hasOnOff: data.hasOnOff,
-                fuelCalibration: data.fuelCalibration,
-            };
-
-            await editVehicleSuperAdmin(
-                selectedVehicle.id,
-                Number(companyId),
-                vehiclePayload
-            );
-
             const updatedVehicles = await getDetailedListVehiclesByCompany(Number(companyId));
             setVehicles(updatedVehicles || []);
-
-            toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
-            setOpenDialogEdit(false);
-            setSelectedVehicle(null);
-
         } catch (err) {
-            console.error("Error updating vehicle:", err);
-            toast.error("Gagal mengupdate kendaraan. Silakan coba lagi.", { id: toastId });
+            console.error("Gagal refresh data:", err);
         }
-    }
+    };
 
     const handleDeleteVehicle = async (vehicleId: number) => {
         if (!confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) return;
@@ -441,7 +389,7 @@ export function ListKendaraanPage() {
                                                     {vehicle.markingNumber || "-"}
                                                 </td>
                                                 <td className="px-6 py-3 text-sm text-gray-600">
-                                                    <div className="relative">
+                                                    <div className="relative dropdown-action-container">
                                                         <button
                                                             onClick={() => setOpenMenuId(openMenuId === vehicle.id ? null : vehicle.id)}
                                                             className="p-1 hover:bg-gray-200 rounded transition-colors"
@@ -449,7 +397,12 @@ export function ListKendaraanPage() {
                                                             <Ellipsis size={18} className="text-gray-600" />
                                                         </button>
                                                         {openMenuId === vehicle.id && (
-                                                            <div className="absolute right-0 mt-1 w-32 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10">
+                                                            <div className={`absolute right-0 mt-1 w-32 bg-white border border-[#E2E8F0] rounded-lg shadow-lg z-10
+                                                                ${index >= paginatedVehicles.length - 2
+                                                                    ? "bottom-full"
+                                                                    : "top-full"
+                                                                }
+                                                            `}>
                                                                 <button
                                                                     onClick={() => {
                                                                         setSelectedVehicle(vehicle);
@@ -544,17 +497,20 @@ export function ListKendaraanPage() {
             <DialogKendaraanTambah
                 open={openDialog}
                 onOpenChange={setOpenDialog}
-                onSubmit={handleAddVehicle}
                 companyId={Number(companyId)}
+                onSuccess={fetchVehiclesList}
             />
 
             {/* Dialog untuk edit kendaraan */}
             <DialogKendaraanEdit
                 open={openDialogEdit}
-                onOpenChange={setOpenDialogEdit}
+                onOpenChange={(isOpen) => {
+                    setOpenDialogEdit(isOpen);
+                    if (!isOpen) setSelectedVehicle(null);
+                }}
                 vehicle={selectedVehicle}
                 companyId={Number(companyId)}
-                onSubmit={handleEditVehicle}
+                onSuccess={fetchVehiclesList}
             />
 
             {/* Dialog untuk tambah model kendaraan */}

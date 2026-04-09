@@ -21,8 +21,8 @@ import { KendaraanFormData } from "@/pages/kendaraan/types";
 interface DialogKendaraanTambahProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit?: (data: KendaraanFormData) => void;
   companyId: number;
+  onSuccess?: () => void;
 }
 
 interface VehicleModel {
@@ -47,8 +47,8 @@ const initialFormData: KendaraanFormData = {
 export function DialogKendaraanTambah({
   open,
   onOpenChange,
-  onSubmit,
   companyId,
+  onSuccess,
 }: DialogKendaraanTambahProps) {
   const [formData, setFormData] = useState<KendaraanFormData>(initialFormData);
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
@@ -124,6 +124,11 @@ export function DialogKendaraanTambah({
       return;
     }
 
+    if (!formData.image?.trim()) {
+      toast.error("Gambar kendaraan tidak boleh kosong");
+      return;
+    }
+
     setIsSubmitting(true);
     const toastId = toast.loading("Menambahkan kendaraan...");
 
@@ -138,6 +143,7 @@ export function DialogKendaraanTambah({
         frameNumber: formData.frameNumber,
         engineNumber: formData.engineNumber,
         marking_number: formData.markingNumber,
+        description: formData.description || "",
       };
 
       console.log("Sending payload:", payload);
@@ -147,7 +153,7 @@ export function DialogKendaraanTambah({
       toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
       setFormData(initialFormData);
       onOpenChange(false);
-      onSubmit?.(formData);
+      onSuccess?.();
     } catch (error: unknown) {
       console.error("Error adding vehicle:", error);
 

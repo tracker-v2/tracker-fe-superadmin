@@ -30,7 +30,7 @@ jobs:
       - name: Deploy to Vercel
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+            vercel deploy --prod --token=${{ secrets.TRACKER_SUPERADMIN_VERCEL_TOKEN }} --yes
           fi
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
