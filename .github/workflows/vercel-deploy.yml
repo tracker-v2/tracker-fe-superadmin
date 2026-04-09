@@ -1,0 +1,26 @@
+name: Vercel Production Deploy
+
+on:
+  push:
+    branches:
+      - master # atau main (sesuaikan dengan kamu)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Pull Vercel Environment
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.TRACKER_SUPERADMIN_VERCEL_TOKEN }}
+
+      - name: Build Project
+        run: npx vercel build --token=${{ secrets.TRACKER_SUPERADMIN_VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.TRACKER_SUPERADMIN_VERCEL_TOKEN }}
