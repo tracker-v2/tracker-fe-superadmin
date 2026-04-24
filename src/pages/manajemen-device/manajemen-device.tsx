@@ -12,6 +12,7 @@ import {
 } from "@/lib/pagination";
 import { PaginationControls } from "@/components/ui/pagination";
 import { DialogDeviceTambah } from "./dialog-device-tambah";
+import { DialogTipeDeviceTambah } from "./dialog-tipe-device-tambah";
 
 export function ManajemenDevicePage() {
     const [search, setSearch] = useState<string>("");
@@ -89,13 +90,21 @@ export function ManajemenDevicePage() {
                             </form>
                         </div>
 
-                        {/* ADD BUTTON */}
-                        <DialogDeviceTambah onSuccess={handleRefresh}>
-                            <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white gap-2 h-10">
-                                <Plus size={18} />
-                                <span className="font-medium">Tambah Device</span>
-                            </Button>
-                        </DialogDeviceTambah>
+                        {/* ADD BUTTONS */}
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <DialogDeviceTambah onSuccess={handleRefresh}>
+                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white gap-2 h-10">
+                                    <Plus size={18} />
+                                    <span className="font-medium">Tambah Device</span>
+                                </Button>
+                            </DialogDeviceTambah>
+                            <DialogTipeDeviceTambah onSuccess={handleRefresh}>
+                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white gap-2 h-10">
+                                    <Plus size={18} />
+                                    <span className="font-medium">Tambah Tipe Device</span>
+                                </Button>
+                            </DialogTipeDeviceTambah>
+                        </div>
                     </div>
                 </div>
 

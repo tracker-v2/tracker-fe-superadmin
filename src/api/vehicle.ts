@@ -166,3 +166,24 @@ export const addVehicleSuperAdmin = async (vehicleData: {
   const res = await axios.post(`vehicles/superadmin`, vehicleData);
   return res.data;
 };
+
+// fuel calibration - POST /v1/vehicles/:vehicleId/fuel-calibration
+export const getFuelCalibration = async (vehicleId: number) => {
+  const res = await axios.get(`vehicles/${vehicleId}/fuel-calibration`);
+  return res.data.data;
+}
+
+export const postFuelCalibration = async (
+  vehicleId: number,
+  fuelCalibrationCoefficients: number[]
+) => {
+  const res = await axios.post(
+    `/vehicles/${vehicleId}/fuel-calibration`,
+    {
+      vehicleId,
+      fuelCalibrationCoefficients
+    }
+  );
+  return res.data;
+};
+
