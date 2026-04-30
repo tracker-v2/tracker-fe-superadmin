@@ -470,7 +470,7 @@ export function DialogKendaraanTambah({
                 <Input
                   id="fuelCalibration"
                   name="fuelCalibration"
-                  placeholder="Contoh: 3.4542514"
+                  placeholder="Masukan koefisien kalibrasi fuel"
                   value={formData.fuelCalibration ?? ""}
                   onChange={handleInputChange}
                   disabled={!formData.hasFuel}
