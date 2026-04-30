@@ -44,7 +44,7 @@ export function ManajemenDevicePage() {
         error: errorModels,
         mutate: mutateModels,
     } = useSWR<DeviceModelRow[]>(
-        ["device-models/list"],
+        ["devices-model/list"],
         () => deviceModelApi.getList(),
         {
             revalidateOnFocus: false,
