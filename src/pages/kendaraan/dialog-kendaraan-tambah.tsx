@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getVehicleModels } from "@/api/vehicle-models";
-import { addVehicleSuperAdmin } from "@/api/vehicle";
+import { addVehicleSuperAdmin, postFuelCalibration } from "@/api/vehicle";
 import { toast } from "sonner";
 import { KendaraanFormData } from "@/pages/kendaraan/types";
 
@@ -42,6 +43,9 @@ const initialFormData: KendaraanFormData = {
   year: 0,
   markingNumber: "",
   image: "",
+  hasFuel: false,
+  hasOnOff: false,
+  fuelCalibration: "",
 };
 
 export function DialogKendaraanTambah({
@@ -90,10 +94,17 @@ export function DialogKendaraanTambah({
     }));
   };
 
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
+    // Validation - hanya untuk field yang wajib
     if (!formData.vehicleModelId) {
       toast.error("Pilih model kendaraan terlebih dahulu");
       return;
@@ -101,11 +112,6 @@ export function DialogKendaraanTambah({
 
     if (!formData.licensePlate.trim()) {
       toast.error("Plat nomor/ID kendaraan tidak boleh kosong");
-      return;
-    }
-
-    if (!formData.frameNumber.trim()) {
-      toast.error("Nomor rangka tidak boleh kosong");
       return;
     }
 
@@ -124,31 +130,54 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.image?.trim()) {
-      toast.error("Gambar kendaraan tidak boleh kosong");
-      return;
-    }
-
     setIsSubmitting(true);
     const toastId = toast.loading("Menambahkan kendaraan...");
 
     try {
+      // Send optional fields as empty string if not filled
       const payload = {
         vehicleModelId: formData.vehicleModelId,
         companyId: companyId,
         licensePlate: formData.licensePlate,
-        image: formData.image || "",
+        image: formData.image?.trim() || "-",
         color: formData.color,
         year: formData.year,
-        frameNumber: formData.frameNumber,
+        frameNumber: formData.frameNumber?.trim() || "-",
         engineNumber: formData.engineNumber,
-        marking_number: formData.markingNumber,
-        description: formData.description || "",
+        marking_number: formData.markingNumber?.trim() || "",
+        description: formData.description?.trim() || "",
       };
 
       console.log("Sending payload:", payload);
 
-      await addVehicleSuperAdmin(payload);
+      const response = await addVehicleSuperAdmin(payload);
+      const vehicleId = response?.data?.id || response?.id;
+
+      if (!vehicleId) {
+        throw new Error("Vehicle ID tidak diterima dari server");
+      }
+      
+      // Handle fuel calibration if enabled
+      if (formData.hasFuel && formData.fuelCalibration?.trim()) {
+        try {
+          toast.loading("Mengatur kalibrasi fuel...", { id: toastId });
+          
+          // Parse fuel calibration coefficient (bisa single number atau array)
+          const calibrationValue = formData.fuelCalibration.trim();
+          const coefficients = calibrationValue.split(",").map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+          
+          if (coefficients.length === 0) {
+            throw new Error("Format kalibrasi fuel tidak valid. Gunakan format: 3.45 atau 3.45,2.1");
+          }
+
+          await postFuelCalibration(vehicleId, coefficients);
+          toast.success("Kalibrasi fuel berhasil diatur", { id: toastId });
+        } catch (calibrationError) {
+          console.error("Error setting fuel calibration:", calibrationError);
+          const calibrationErrorMsg = calibrationError instanceof Error ? calibrationError.message : "Gagal mengatur kalibrasi fuel";
+          toast.warning(`Kendaraan ditambahkan, tetapi: ${calibrationErrorMsg}`, { id: toastId });
+        }
+      }
 
       toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
       setFormData(initialFormData);
@@ -366,6 +395,68 @@ export function DialogKendaraanTambah({
               onChange={handleInputChange}
               className="mt-1 text-sm bg-white"
             />
+          </div>
+
+          {/* Info Tambahan Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              Info Tambahan
+            </h3>
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* Fitur Section - Left Column */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Fitur</h4>
+                <div className="space-y-3">
+                  {/* Fuel Checkbox */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasFuel"
+                      checked={formData.hasFuel || false}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange("hasFuel", checked as boolean)
+                      }
+                      className="rounded"
+                    />
+                    <Label htmlFor="hasFuel" className="text-sm font-medium cursor-pointer">
+                      Fuel
+                    </Label>
+                  </div>
+
+                  {/* On/Off Checkbox */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hasOnOff"
+                      checked={formData.hasOnOff || false}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange("hasOnOff", checked as boolean)
+                      }
+                      className="rounded"
+                    />
+                    <Label htmlFor="hasOnOff" className="text-sm font-medium cursor-pointer">
+                      On/Off
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fuel Calibration - Right Column */}
+              <div>
+                <Label htmlFor="fuelCalibration" className="text-sm font-medium">
+                  Kalibrasi Fuel
+                </Label>
+                <Input
+                  id="fuelCalibration"
+                  name="fuelCalibration"
+                  type="text"
+                  placeholder="Contoh: 3.454251"
+                  value={formData.fuelCalibration || ""}
+                  onChange={handleInputChange}
+                  disabled={!formData.hasFuel}
+                  className="mt-1 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}
