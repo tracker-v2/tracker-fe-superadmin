@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getVehicleModels } from "@/api/vehicle-models";
-import { addVehicleSuperAdmin } from "@/api/vehicle";
+import { addVehicleSuperAdmin, postFuelCalibration } from "@/api/vehicle";
+import { toggleRemoteStarter } from "@/api/remote-starter";
 import { toast } from "sonner";
 import { KendaraanFormData } from "@/pages/kendaraan/types";
 
@@ -42,6 +44,9 @@ const initialFormData: KendaraanFormData = {
   year: 0,
   markingNumber: "",
   image: "",
+  hasFuel: false,
+  hasOnOff: false,
+  fuelCalibration: "",
 };
 
 export function DialogKendaraanTambah({
@@ -88,6 +93,17 @@ export function DialogKendaraanTambah({
       ...prev,
       [name]: name === "vehicleModelId" ? Number(value) : value,
     }));
+  };
+
+  const handleCheckboxChange = (name: "hasFuel" | "hasOnOff", checked: boolean) => {
+    setFormData((prev) => {
+      const updates: Partial<KendaraanFormData> = { [name]: checked };
+      // Auto-clear fuelCalibration when Fuel is unchecked
+      if (name === "hasFuel" && !checked) {
+        updates.fuelCalibration = "";
+      }
+      return { ...prev, ...updates };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,9 +164,42 @@ export function DialogKendaraanTambah({
 
       console.log("Sending payload:", payload);
 
-      await addVehicleSuperAdmin(payload);
+      // Step 1: Create vehicle and extract vehicleId
+      const createResponse = await addVehicleSuperAdmin(payload);
+      const vehicleId = createResponse?.data?.id ?? createResponse?.id;
 
       toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
+
+      // Step 2: Post fuel calibration if Fuel is checked and calibration value exists
+      if (formData.hasFuel && formData.fuelCalibration?.trim() && vehicleId) {
+        try {
+          // Parse the comma/space-separated string into an array of numbers
+          const coefficients = formData.fuelCalibration
+            .split(/[,\s]+/)
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0)
+            .map(Number)
+            .filter((n) => !isNaN(n));
+
+          if (coefficients.length > 0) {
+            await postFuelCalibration(vehicleId, coefficients);
+          }
+        } catch (fuelError) {
+          console.error("Failed to set fuel calibration:", fuelError);
+          toast.warning("Kendaraan berhasil dibuat, namun gagal mengatur fitur Fuel");
+        }
+      }
+
+      // Step 3: Toggle remote starter if On/Off is checked
+      if (formData.hasOnOff && vehicleId) {
+        try {
+          await toggleRemoteStarter(vehicleId);
+        } catch (starterError) {
+          console.error("Failed to enable remote starter:", starterError);
+          toast.warning("Kendaraan berhasil dibuat, namun gagal mengaktifkan fitur On/Off");
+        }
+      }
+
       setFormData(initialFormData);
       onOpenChange(false);
       onSuccess?.();
@@ -366,6 +415,69 @@ export function DialogKendaraanTambah({
               onChange={handleInputChange}
               className="mt-1 text-sm bg-white"
             />
+          </div>
+
+          {/* Info Tambahan Section */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Info Tambahan</h3>
+            <div className="grid grid-cols-2 gap-8 items-start">
+              {/* Fitur Checkboxes */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 block mb-3">Fitur</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hasFuel"
+                      checked={formData.hasFuel ?? false}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange("hasFuel", checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="hasFuel"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Fuel
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hasOnOff"
+                      checked={formData.hasOnOff ?? false}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange("hasOnOff", checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="hasOnOff"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      On/Off
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kalibrasi Fuel Input */}
+              <div>
+                <Label
+                  htmlFor="fuelCalibration"
+                  className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
+                    }`}
+                >
+                  Kalibrasi Fuel
+                </Label>
+                <Input
+                  id="fuelCalibration"
+                  name="fuelCalibration"
+                  placeholder="Contoh: 3.4542514"
+                  value={formData.fuelCalibration ?? ""}
+                  onChange={handleInputChange}
+                  disabled={!formData.hasFuel}
+                  className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Action Buttons */}
