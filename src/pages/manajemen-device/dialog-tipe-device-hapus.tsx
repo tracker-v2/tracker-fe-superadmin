@@ -12,8 +12,8 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import useSWRMutation from 'swr/mutation'
 import { deviceModelApi } from '@/api/device-model'
+import { deviceModelPinoutApi } from '@/api/device-model-pinout'
 import { toast } from 'sonner'
 import { PropsWithChildren } from 'react'
 import { AxiosError } from 'axios'
@@ -31,28 +31,64 @@ export function DialogTipeDeviceHapus({
     onSuccess,
 }: DialogTipeDeviceHapusProps) {
     const [open, setOpen] = useState(false)
-
-    // SWR Mutation for deleting device model
-    const { trigger, isMutating } = useSWRMutation(
-        `/device-models/delete/${deviceModelId}`,
-        () => deviceModelApi.delete(deviceModelId),
-        {
-            onSuccess() {
-                toast.success('Tipe device berhasil dihapus')
-                setOpen(false)
-                onSuccess?.()
-            },
-            onError(error: AxiosError | unknown) {
-                const errorMessage = (error as AxiosError<{ message: string }>)?.response?.data?.message || 'Gagal menghapus tipe device'
-                console.error('❌ Delete device model error:', error)
-                toast.error(errorMessage)
-            },
-        }
-    )
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deletionStep, setDeletionStep] = useState('')
 
     const handleDelete = async () => {
-        console.log(`🗑️ Deleting device model with ID: ${deviceModelId}`)
-        trigger()
+        try {
+            setIsDeleting(true)
+            console.log(`🗑️ Deleting device model with ID: ${deviceModelId}`)
+
+            // Step 1: Fetch and delete associated pinouts
+            setDeletionStep('Menghapus PIN settings...')
+            try {
+                const pinouts = await deviceModelPinoutApi.getByDeviceModel(deviceModelId)
+                if (pinouts && pinouts.length > 0) {
+                    console.log(`📝 Found ${pinouts.length} pinouts to delete`)
+                    for (const pinout of pinouts) {
+                        await deviceModelPinoutApi.delete(pinout.id)
+                        console.log(`✅ Pinout deleted with ID ${pinout.id}`)
+                    }
+                    console.log('✅ All pinouts deleted')
+                }
+            } catch (pinError) {
+                console.warn('⚠️ Pinout deletion warning (non-blocking):', pinError)
+                toast.warning('Beberapa PIN settings mungkin tidak terhapus')
+            }
+
+            // Step 2: Delete the device model itself
+            setDeletionStep('Menghapus tipe device...')
+            await deviceModelApi.delete(deviceModelId)
+            console.log('✅ Device model deleted')
+
+            toast.success('Tipe device berhasil dihapus')
+            setOpen(false)
+            onSuccess?.()
+        } catch (error: unknown) {
+            console.error('❌ Delete device model error:', error)
+
+            let errorMessage = 'Gagal menghapus tipe device'
+            if (error instanceof AxiosError) {
+                if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message
+                } else if (error.response?.status === 404) {
+                    errorMessage = 'Tipe device tidak ditemukan (404).'
+                } else if (error.response?.status === 401) {
+                    errorMessage = 'Anda tidak terautentikasi'
+                } else if (error.response?.status === 403) {
+                    errorMessage = 'Anda tidak memiliki izin'
+                } else if (error.message) {
+                    errorMessage = error.message
+                }
+            } else if (error instanceof Error) {
+                errorMessage = error.message
+            }
+
+            toast.error(errorMessage)
+        } finally {
+            setIsDeleting(false)
+            setDeletionStep('')
+        }
     }
 
     return (
@@ -70,7 +106,7 @@ export function DialogTipeDeviceHapus({
                     <DialogDescription className="mt-4">
                         Anda yakin ingin menghapus tipe device <span className="font-semibold text-gray-900">{deviceModelName}</span>?
                         <br />
-                        <span className="text-sm text-red-600">Tindakan ini tidak dapat dibatalkan.</span>
+                        <span className="text-sm text-red-600">Tindakan ini akan menghapus semua PIN settings terkait dan tidak dapat dibatalkan.</span>
                     </DialogDescription>
                 </DialogHeader>
 
@@ -79,7 +115,7 @@ export function DialogTipeDeviceHapus({
                         type="button"
                         variant="outline"
                         onClick={() => setOpen(false)}
-                        disabled={isMutating}
+                        disabled={isDeleting}
                         className="w-full sm:w-auto"
                     >
                         Batal
@@ -87,11 +123,11 @@ export function DialogTipeDeviceHapus({
                     <Button
                         type="button"
                         onClick={handleDelete}
-                        disabled={isMutating}
+                        disabled={isDeleting}
                         className="w-full sm:w-auto bg-red-600 hover:bg-red-700 disabled:bg-gray-600"
                     >
-                        {isMutating && <Loader2 className="animate-spin mr-2" />}
-                        {isMutating ? 'Menghapus...' : 'Hapus Tipe Device'}
+                        {isDeleting && <Loader2 className="animate-spin mr-2" />}
+                        {isDeleting ? deletionStep : 'Hapus Tipe Device'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
