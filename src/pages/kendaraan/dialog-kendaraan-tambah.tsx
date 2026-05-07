@@ -19,6 +19,7 @@ import { addVehicleSuperAdmin, postFuelCalibration } from "@/api/vehicle";
 import { toggleRemoteStarter } from "@/api/remote-starter";
 import { toast } from "sonner";
 import { KendaraanFormData } from "@/pages/kendaraan/types";
+import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
 
 interface DialogKendaraanTambahProps {
   open: boolean;
@@ -47,6 +48,7 @@ const initialFormData: KendaraanFormData = {
   hasFuel: false,
   hasOnOff: false,
   fuelCalibration: "",
+  onOffProcess: "PROCESS_ON",
 };
 
 export function DialogKendaraanTambah({
@@ -59,6 +61,8 @@ export function DialogKendaraanTambah({
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
+  const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
 
   // Fetch vehicle models when dialog opens
   useEffect(() => {
@@ -102,6 +106,10 @@ export function DialogKendaraanTambah({
       if (name === "hasFuel" && !checked) {
         updates.fuelCalibration = "";
       }
+      // Reset onOffProcess to default when On/Off is unchecked
+      if (name === "hasOnOff" && !checked) {
+        updates.onOffProcess = "PROCESS_ON";
+      }
       return { ...prev, ...updates };
     });
   };
@@ -120,11 +128,6 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.frameNumber.trim()) {
-      toast.error("Nomor rangka tidak boleh kosong");
-      return;
-    }
-
     if (!formData.engineNumber.trim()) {
       toast.error("Nomor mesin tidak boleh kosong");
       return;
@@ -140,11 +143,6 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.image?.trim()) {
-      toast.error("Gambar kendaraan tidak boleh kosong");
-      return;
-    }
-
     setIsSubmitting(true);
     const toastId = toast.loading("Menambahkan kendaraan...");
 
@@ -153,10 +151,10 @@ export function DialogKendaraanTambah({
         vehicleModelId: formData.vehicleModelId,
         companyId: companyId,
         licensePlate: formData.licensePlate,
-        image: formData.image || "",
+        image: formData.image || "-",
         color: formData.color,
         year: formData.year,
-        frameNumber: formData.frameNumber,
+        frameNumber: formData.frameNumber || "-",
         engineNumber: formData.engineNumber,
         marking_number: formData.markingNumber,
         description: formData.description || "",
@@ -192,14 +190,12 @@ export function DialogKendaraanTambah({
 
       // Step 3: Toggle remote starter if On/Off is checked
       if (formData.hasOnOff && vehicleId) {
-        try {
-          await toggleRemoteStarter(vehicleId);
-        } catch (starterError) {
-          console.error("Failed to enable remote starter:", starterError);
-          toast.warning("Kendaraan berhasil dibuat, namun gagal mengaktifkan fitur On/Off");
-        }
+        setPendingVehicleId(vehicleId);
+        setConfirmCodeOpen(true);
+        return; // Wait for user to confirm code
       }
 
+      // If no On/Off, complete the flow
       setFormData(initialFormData);
       onOpenChange(false);
       onSuccess?.();
@@ -230,6 +226,30 @@ export function DialogKendaraanTambah({
   const handleCancel = () => {
     setFormData(initialFormData);
     onOpenChange(false);
+  };
+
+  const handleConfirmCodeSubmit = async (code: string) => {
+    if (!pendingVehicleId) {
+      toast.error("Vehicle ID tidak ditemukan");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const processType = formData.onOffProcess || "PROCESS_ON";
+      await toggleRemoteStarter(pendingVehicleId, code, processType);
+      toast.success("Fitur On/Off berhasil diaktifkan");
+      setConfirmCodeOpen(false);
+      setPendingVehicleId(null);
+      setFormData(initialFormData);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (starterError) {
+      console.error("Failed to enable remote starter:", starterError);
+      toast.error("Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -478,6 +498,31 @@ export function DialogKendaraanTambah({
                 />
               </div>
             </div>
+
+            {/* On/Off Selection */}
+            {formData.hasOnOff && (
+              <div className="grid grid-cols-2 gap-8 items-start mt-4 pt-4 border-t">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 block mb-1">
+                    On/Off Process
+                  </Label>
+                </div>
+                <div>
+                  <Select
+                    value={formData.onOffProcess || "PROCESS_ON"}
+                    onValueChange={(value) => handleSelectChange("onOffProcess", value)}
+                  >
+                    <SelectTrigger className="text-sm bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PROCESS_ON">PROCESS_ON</SelectItem>
+                      <SelectItem value="PROCESS_OFF">PROCESS_OFF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -499,6 +544,14 @@ export function DialogKendaraanTambah({
             </Button>
           </div>
         </form>
+
+        <ConfirmCodeDialog
+          open={confirmCodeOpen}
+          onOpenChange={setConfirmCodeOpen}
+          onConfirm={handleConfirmCodeSubmit}
+          action="PROCESS_ON"
+          isLoading={isSubmitting}
+        />
       </DialogContent>
     </Dialog>
   );

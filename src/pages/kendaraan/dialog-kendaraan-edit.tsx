@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 import { toast } from "sonner";
+import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
 
 interface DialogKendaraanEditProps {
   open: boolean;
@@ -57,6 +58,8 @@ export function DialogKendaraanEdit({
   const [formData, setFormData] = useState<KendaraanFormData>(initialFormData);
   const [loadingVehicle, setLoadingVehicle] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
+  const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
 
   const fetchVehicleData = useCallback(async (vehicleId: number, compId: number) => {
     if (!vehicleId || !compId) {
@@ -226,14 +229,12 @@ export function DialogKendaraanEdit({
 
       // Step 3: Toggle remote starter if On/Off is checked
       if (formData.hasOnOff) {
-        try {
-          await toggleRemoteStarter(vehicle.id);
-        } catch (starterError) {
-          console.error("Failed to toggle remote starter:", starterError);
-          toast.warning("Kendaraan berhasil diperbarui, namun gagal mengaktifkan fitur On/Off");
-        }
+        setPendingVehicleId(vehicle.id);
+        setConfirmCodeOpen(true);
+        return; // Wait for user to confirm code
       }
 
+      // If no On/Off, complete the flow
       setFormData(initialFormData);
       onOpenChange(false);
       onSuccess?.();
@@ -260,6 +261,29 @@ export function DialogKendaraanEdit({
   const handleCancel = () => {
     setFormData(initialFormData);
     onOpenChange(false);
+  };
+
+  const handleConfirmCodeSubmit = async (code: string) => {
+    if (!pendingVehicleId) {
+      toast.error("Vehicle ID tidak ditemukan");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await toggleRemoteStarter(pendingVehicleId, code, "PROCESS_ON");
+      toast.success("Fitur On/Off berhasil diaktifkan");
+      setConfirmCodeOpen(false);
+      setPendingVehicleId(null);
+      setFormData(initialFormData);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (starterError) {
+      console.error("Failed to enable remote starter:", starterError);
+      toast.error("Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -569,6 +593,14 @@ export function DialogKendaraanEdit({
             </Button>
           </div>
         </form>
+
+        <ConfirmCodeDialog
+          open={confirmCodeOpen}
+          onOpenChange={setConfirmCodeOpen}
+          onConfirm={handleConfirmCodeSubmit}
+          action="PROCESS_ON"
+          isLoading={isSubmitting}
+        />
       </DialogContent>
     </Dialog>
   );

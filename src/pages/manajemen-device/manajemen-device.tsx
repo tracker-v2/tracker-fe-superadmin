@@ -126,7 +126,7 @@ export function ManajemenDevicePage() {
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
                             }`}
                         >
-                            List Device
+                            Daftar Device
                         </Button>
                         <Button
                             type="button"
@@ -137,7 +137,7 @@ export function ManajemenDevicePage() {
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
                             }`}
                         >
-                            List Tipe Device
+                            Daftar Tipe Device
                         </Button>
                     </div>
 
