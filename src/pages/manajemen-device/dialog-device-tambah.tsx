@@ -22,7 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import useSWR from 'swr'
-import { createDeviceApi, getDeviceModelsApi } from '@/api/device'
+import { createDeviceApi, getDeviceModelsApi, getDevicesListApi } from '@/api/device'
 import { deviceModelPinoutApi } from '@/api/device-model-pinout'
 import { deviceIdentifiersApi } from '@/api/device-identifiers'
 import { deviceGsmApi } from '@/api/device-gsm'
@@ -88,6 +88,20 @@ export function DialogDeviceTambah({
         '/vehicles',
         getAllVehicle
     )
+
+    // Fetch existing devices
+    const { data: existingDevices, isLoading: isLoadingDevices } = useSWR(
+        '/devices/list',
+        () => getDevicesListApi()
+    )
+
+    // Filter vehicles yang belum punya device
+    const availableVehicles = useMemo(() => {
+        if (!vehicles || !existingDevices) return vehicles ?? []
+        
+        const vehicleIdsWithDevice = new Set(existingDevices.map((device: any) => device.vehicleId))
+        return vehicles.filter((vehicle) => !vehicleIdsWithDevice.has(vehicle.id))
+    }, [vehicles, existingDevices])
 
     // Fetch pinouts based on selected device model
     const selectedModelId = form.watch('deviceModelId')
@@ -322,14 +336,14 @@ export function DialogDeviceTambah({
                                                         variant="outline"
                                                         role="combobox"
                                                         aria-expanded={vehiclePopoverOpen}
-                                                        disabled={isLoadingVehicles || isCreatingSequence}
+                                                        disabled={isLoadingVehicles || isLoadingDevices || isCreatingSequence}
                                                         className={cn(
                                                             "w-full justify-between bg-inherit font-normal",
                                                             !field.value && "text-muted-foreground"
                                                         )}
                                                     >
                                                         {field.value
-                                                            ? vehicles?.find((v) => v.id === field.value)?.licensePlate
+                                                            ? availableVehicles?.find((v) => v.id === field.value)?.licensePlate
                                                             : "Cari atau pilih kendaraan..."}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
@@ -342,15 +356,15 @@ export function DialogDeviceTambah({
                                                 <Command>
                                                     <CommandInput placeholder="Cari Plat..." />
                                                     <CommandList>
-                                                        {isLoadingVehicles ? (
+                                                        {isLoadingVehicles || isLoadingDevices ? (
                                                             <div className="py-6 text-center text-sm text-gray-500">
                                                                 Loading...
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <CommandEmpty>Kendaraan tidak ditemukan</CommandEmpty>
+                                                                <CommandEmpty>Kendaraan tidak ditemukan atau semua kendaraan sudah memiliki device</CommandEmpty>
                                                                 <CommandGroup>
-                                                                    {(vehicles ?? []).map((item) => (
+                                                                    {(availableVehicles ?? []).map((item) => (
                                                                         <CommandItem
                                                                             key={item.id}
                                                                             value={item.licensePlate}
@@ -501,7 +515,7 @@ export function DialogDeviceTambah({
                         <DialogFooter>
                             <Button
                                 type="submit"
-                                disabled={isCreatingSequence}
+                                disabled={isCreatingSequence || isLoadingDevices}
                                 className="bg-blue-900 disabled:bg-gray-600 w-full"
                             >
                                 {isCreatingSequence && <Loader2 className="animate-spin mr-2" />}
