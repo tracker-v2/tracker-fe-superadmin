@@ -17,9 +17,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { getVehicleModels } from "@/api/vehicle-models";
 import { addVehicleSuperAdmin, postFuelCalibration } from "@/api/vehicle";
 import { toggleRemoteStarter } from "@/api/remote-starter";
+import { assignFeatureToVehicle } from "@/api/vehicle-features";
+import { getCompaniesApi } from "@/api/companies";
 import { toast } from "sonner";
 import { KendaraanFormData } from "@/pages/kendaraan/types";
-import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
 
 interface DialogKendaraanTambahProps {
   open: boolean;
@@ -33,6 +34,13 @@ interface VehicleModel {
   vehicleType: string;
   brand: string;
   model: string;
+}
+
+interface Company {
+  id: number;
+  name: string;
+  codeConfirm: string;
+  [key: string]: unknown;
 }
 
 const initialFormData: KendaraanFormData = {
@@ -61,8 +69,6 @@ export function DialogKendaraanTambah({
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
-  const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
 
   // Fetch vehicle models when dialog opens
   useEffect(() => {
@@ -128,11 +134,6 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.engineNumber.trim()) {
-      toast.error("Nomor mesin tidak boleh kosong");
-      return;
-    }
-
     if (!formData.color.trim()) {
       toast.error("Warna kendaraan tidak boleh kosong");
       return;
@@ -140,6 +141,18 @@ export function DialogKendaraanTambah({
 
     if (!formData.year || formData.year <= 0) {
       toast.error("Tahun pembuatan harus valid");
+      return;
+    }
+
+    // Validation: Cannot have both Fuel and On/Off checked (backend only supports 1 feature per vehicle)
+    if (formData.hasFuel && formData.hasOnOff) {
+      toast.error("Hanya boleh memilih satu fitur antara Fuel atau On/Off. Fitur multiple sedang dalam pengembangan.");
+      return;
+    }
+
+    // Validation: On/Off must have Process selected
+    if (formData.hasOnOff && !formData.onOffProcess) {
+      toast.error("Pilih Process (ON atau OFF) untuk fitur On/Off");
       return;
     }
 
@@ -155,7 +168,7 @@ export function DialogKendaraanTambah({
         color: formData.color,
         year: formData.year,
         frameNumber: formData.frameNumber || "-",
-        engineNumber: formData.engineNumber,
+        engineNumber: formData.engineNumber || "-",
         marking_number: formData.markingNumber,
         description: formData.description || "",
       };
@@ -168,7 +181,28 @@ export function DialogKendaraanTambah({
 
       toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
 
-      // Step 2: Post fuel calibration if Fuel is checked and calibration value exists
+      // Step 2: Assign feature (only ONE per vehicle - backend limitation)
+      if (vehicleId) {
+        if (formData.hasOnOff) {
+          try {
+            await assignFeatureToVehicle(vehicleId, 1); // Feature ID 1 = ON/OFF
+            toast.success("Fitur On/Off berhasil diassign");
+          } catch (onOffFeatureError) {
+            console.error("Failed to assign On/Off feature:", onOffFeatureError);
+            toast.warning("Gagal mengassign fitur On/Off ke kendaraan");
+          }
+        } else if (formData.hasFuel) {
+          try {
+            await assignFeatureToVehicle(vehicleId, 2); // Feature ID 2 = FUEL
+            toast.success("Fitur Fuel berhasil diassign");
+          } catch (fuelFeatureError) {
+            console.error("Failed to assign Fuel feature:", fuelFeatureError);
+            toast.warning("Gagal mengassign fitur Fuel ke kendaraan");
+          }
+        }
+      }
+
+      // Step 3: Post fuel calibration if Fuel is checked and calibration value exists
       if (formData.hasFuel && formData.fuelCalibration?.trim() && vehicleId) {
         try {
           // Parse the comma/space-separated string into an array of numbers
@@ -188,14 +222,29 @@ export function DialogKendaraanTambah({
         }
       }
 
-      // Step 3: Toggle remote starter if On/Off is checked
+      // Step 4: Toggle remote starter if On/Off is checked
       if (formData.hasOnOff && vehicleId) {
-        setPendingVehicleId(vehicleId);
-        setConfirmCodeOpen(true);
-        return; // Wait for user to confirm code
+        try {
+          // Fetch company to get code_confirm
+          const companies = await getCompaniesApi() as Company[];
+          const company = companies.find((c) => c.id === companyId);
+          
+          if (!company?.codeConfirm) {
+            toast.error("Kode konfirmasi company tidak ditemukan");
+            return;
+          }
+
+          const processType = (formData.onOffProcess || "PROCESS_ON") as "PROCESS_ON" | "PROCESS_OFF";
+          await toggleRemoteStarter(vehicleId, company.codeConfirm, processType);
+          toast.success("Fitur On/Off berhasil diaktifkan");
+        } catch (starterError) {
+          console.error("Failed to enable remote starter:", starterError);
+          // toast.error("Gagal mengaktifkan fitur On/Off. Silakan coba lagi.");
+          return;
+        }
       }
 
-      // If no On/Off, complete the flow
+      // Complete the flow
       setFormData(initialFormData);
       onOpenChange(false);
       onSuccess?.();
@@ -228,29 +277,7 @@ export function DialogKendaraanTambah({
     onOpenChange(false);
   };
 
-  const handleConfirmCodeSubmit = async (code: string) => {
-    if (!pendingVehicleId) {
-      toast.error("Vehicle ID tidak ditemukan");
-      return;
-    }
 
-    try {
-      setIsSubmitting(true);
-      const processType = formData.onOffProcess || "PROCESS_ON";
-      await toggleRemoteStarter(pendingVehicleId, code, processType);
-      toast.success("Fitur On/Off berhasil diaktifkan");
-      setConfirmCodeOpen(false);
-      setPendingVehicleId(null);
-      setFormData(initialFormData);
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (starterError) {
-      console.error("Failed to enable remote starter:", starterError);
-      toast.error("Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -440,11 +467,10 @@ export function DialogKendaraanTambah({
           {/* Info Tambahan Section */}
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Info Tambahan</h3>
-            <div className="grid grid-cols-2 gap-8 items-start">
-              {/* Fitur Checkboxes */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 block mb-3">Fitur</Label>
-                <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Row 1: Fuel Checkbox & Kalibrasi Fuel Input */}
+              <div className="grid grid-cols-2 gap-8 items-end">
+                <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="hasFuel"
@@ -460,6 +486,30 @@ export function DialogKendaraanTambah({
                       Fuel
                     </Label>
                   </div>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="fuelCalibration"
+                    className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
+                      }`}
+                  >
+                    Kalibrasi Fuel
+                  </Label>
+                  <Input
+                    id="fuelCalibration"
+                    name="fuelCalibration"
+                    placeholder="Masukan koefisien kalibrasi fuel"
+                    value={formData.fuelCalibration ?? ""}
+                    onChange={handleInputChange}
+                    disabled={!formData.hasFuel}
+                    className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: On/Off Checkbox & On/Off Process Select */}
+              <div className="grid grid-cols-2 gap-8 items-end">
+                <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="hasOnOff"
@@ -476,43 +526,20 @@ export function DialogKendaraanTambah({
                     </Label>
                   </div>
                 </div>
-              </div>
-
-              {/* Kalibrasi Fuel Input */}
-              <div>
-                <Label
-                  htmlFor="fuelCalibration"
-                  className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
-                    }`}
-                >
-                  Kalibrasi Fuel
-                </Label>
-                <Input
-                  id="fuelCalibration"
-                  name="fuelCalibration"
-                  placeholder="Masukan koefisien kalibrasi fuel"
-                  value={formData.fuelCalibration ?? ""}
-                  onChange={handleInputChange}
-                  disabled={!formData.hasFuel}
-                  className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            {/* On/Off Selection */}
-            {formData.hasOnOff && (
-              <div className="grid grid-cols-2 gap-8 items-start mt-4 pt-4 border-t">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 block mb-1">
-                    On/Off Process
+                  <Label
+                    htmlFor="onOffProcess"
+                    className={`text-sm font-medium block mb-1 ${formData.hasOnOff ? "text-gray-700" : "text-gray-400"
+                      }`}
+                  >
+                    Process
                   </Label>
-                </div>
-                <div>
                   <Select
                     value={formData.onOffProcess || "PROCESS_ON"}
                     onValueChange={(value) => handleSelectChange("onOffProcess", value)}
+                    disabled={!formData.hasOnOff}
                   >
-                    <SelectTrigger className="text-sm bg-white">
+                    <SelectTrigger className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -522,7 +549,7 @@ export function DialogKendaraanTambah({
                   </Select>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -544,14 +571,6 @@ export function DialogKendaraanTambah({
             </Button>
           </div>
         </form>
-
-        <ConfirmCodeDialog
-          open={confirmCodeOpen}
-          onOpenChange={setConfirmCodeOpen}
-          onConfirm={handleConfirmCodeSubmit}
-          action="PROCESS_ON"
-          isLoading={isSubmitting}
-        />
       </DialogContent>
     </Dialog>
   );
