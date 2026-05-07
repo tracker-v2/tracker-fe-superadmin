@@ -156,6 +156,11 @@ export function DialogKendaraanTambah({
       return;
     }
 
+    if (!formData.image?.trim()) {
+      toast.error("Gambar kendaraan tidak boleh kosong");
+      return;
+    }
+
     setIsSubmitting(true);
     const toastId = toast.loading("Menambahkan kendaraan...");
 
