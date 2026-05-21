@@ -144,20 +144,9 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    // Validation: Cannot have both Fuel and On/Off checked (backend only supports 1 feature per vehicle)
-    if (formData.hasFuel && formData.hasOnOff) {
-      toast.error("Hanya boleh memilih satu fitur antara Fuel atau On/Off. Fitur multiple sedang dalam pengembangan.");
-      return;
-    }
-
     // Validation: On/Off must have Process selected
     if (formData.hasOnOff && !formData.onOffProcess) {
       toast.error("Pilih Process (ON atau OFF) untuk fitur On/Off");
-      return;
-    }
-
-    if (!formData.image?.trim()) {
-      toast.error("Gambar kendaraan tidak boleh kosong");
       return;
     }
 
@@ -180,37 +169,36 @@ export function DialogKendaraanTambah({
 
       console.log("Sending payload:", payload);
 
-      // Step 1: Create vehicle and extract vehicleId
       const createResponse = await addVehicleSuperAdmin(payload);
       const vehicleId = createResponse?.data?.id ?? createResponse?.id;
 
       toast.success("Kendaraan berhasil ditambahkan", { id: toastId });
 
-      // Step 2: Assign feature (only ONE per vehicle - backend limitation)
       if (vehicleId) {
+        const featureIds: number[] = [];
+
         if (formData.hasOnOff) {
+          featureIds.push(1); // Feature ID 1 = ON/OFF
+        }
+
+        if (formData.hasFuel) {
+          featureIds.push(2); // Feature ID 2 = FUEL
+        }
+
+        if (featureIds.length > 0) {
           try {
-            await assignFeatureToVehicle(vehicleId, 1); // Feature ID 1 = ON/OFF
-            toast.success("Fitur On/Off berhasil diassign");
-          } catch (onOffFeatureError) {
-            console.error("Failed to assign On/Off feature:", onOffFeatureError);
-            toast.warning("Gagal mengassign fitur On/Off ke kendaraan");
-          }
-        } else if (formData.hasFuel) {
-          try {
-            await assignFeatureToVehicle(vehicleId, 2); // Feature ID 2 = FUEL
-            toast.success("Fitur Fuel berhasil diassign");
-          } catch (fuelFeatureError) {
-            console.error("Failed to assign Fuel feature:", fuelFeatureError);
-            toast.warning("Gagal mengassign fitur Fuel ke kendaraan");
+            await assignFeatureToVehicle(vehicleId, featureIds);
+            toast.success(`${featureIds.length} fitur berhasil diassign`);
+          } catch (featureError) {
+            console.error("Failed to assign features:", featureError);
+            toast.warning("Gagal mengassign fitur ke kendaraan");
           }
         }
       }
 
-      // Step 3: Post fuel calibration if Fuel is checked and calibration value exists
+      //  POST fuel calibration jika fuel dicentang dan nilai kalibrasi ada
       if (formData.hasFuel && formData.fuelCalibration?.trim() && vehicleId) {
         try {
-          // Parse the comma/space-separated string into an array of numbers
           const coefficients = formData.fuelCalibration
             .split(/[,\s]+/)
             .map((v) => v.trim())
@@ -233,7 +221,7 @@ export function DialogKendaraanTambah({
           // Fetch company to get code_confirm
           const companies = await getCompaniesApi() as Company[];
           const company = companies.find((c) => c.id === companyId);
-          
+
           if (!company?.codeConfirm) {
             toast.error("Kode konfirmasi company tidak ditemukan");
             return;

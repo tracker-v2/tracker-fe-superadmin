@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tracker-superadmin-fe
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3011/api/v1
+      - VITE_WEB_SOCKET=http://localhost:3011/
+    networks:
+      - tracker-network
+    restart: unless-stopped
+
+networks:
+  tracker-network:
+    driver: bridge

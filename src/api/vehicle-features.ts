@@ -10,10 +10,10 @@ export const getVehicleFeatureDetail = async (id: string | number) => {
   return res.data.data;
 };
 
-export const assignFeatureToVehicle = async (vehicleId: number, featureId: number) => {
+export const assignFeatureToVehicle = async (vehicleId: number, featureIds: number[]) => {
   const res = await axios.post(`vehicle-features/create`, {
     vehicleId,
-    featureId,
+    featureIds,
   });
   return res.data.data;
 };

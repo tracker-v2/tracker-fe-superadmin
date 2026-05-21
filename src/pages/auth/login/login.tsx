@@ -37,8 +37,8 @@ export default function LoginPage() {
       const userProfile = await getProfileApi(token);
 
       // Debug: lihat data yang dikembalikan API
-      console.log('User Profile:', userProfile);
-      console.log('Role:', userProfile.role);
+      // console.log('User Profile:', userProfile);
+      // console.log('Role:', userProfile.role);
 
       // ✅ VALIDASI ROLE SUPER_ADMIN - hanya super_admin yang bisa login
       if (userProfile.role !== 'super_admin') {

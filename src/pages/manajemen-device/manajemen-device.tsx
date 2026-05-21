@@ -114,74 +114,52 @@ export function ManajemenDevicePage() {
         <div className="h-full w-full">
             <div className="bg-white rounded-lg sm:rounded-xl p-4 sm:p-6 flex flex-col h-full w-full gap-4">
                 {/* HEADER - TOGGLE, SEARCH & ADD BUTTON */}
-                <div className="flex flex-col gap-3 sm:gap-4">
-                    {/* TOGGLE BUTTONS */}
-                    <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    {/* BAGIAN KIRI: TOGGLE BUTTONS */}
+                    <div className="flex gap-2 order-2 sm:order-1">
                         <Button
                             type="button"
                             onClick={() => handleViewChange("device")}
-                            className={`h-9 px-4 rounded-md text-sm font-medium transition-colors ${
-                                isDeviceView
+                            className={`h-10 px-4 rounded-md text-sm font-medium transition-colors ${isDeviceView
                                     ? "bg-blue-900 text-white hover:bg-blue-800"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
-                            }`}
+                                }`}
                         >
                             Daftar Device
                         </Button>
                         <Button
                             type="button"
                             onClick={() => handleViewChange("tipe-device")}
-                            className={`h-9 px-4 rounded-md text-sm font-medium transition-colors ${
-                                !isDeviceView
+                            className={`h-10 px-4 rounded-md text-sm font-medium transition-colors ${!isDeviceView
                                     ? "bg-blue-900 text-white hover:bg-blue-800"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
-                            }`}
+                                }`}
                         >
                             Daftar Tipe Device
                         </Button>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-end justify-between">
-                        {/* SEARCH */}
-                        <div className="w-full sm:w-72">
-                            <form>
-                                <div className="flex flex-col gap-2 relative">
-                                    <div className="relative">
-                                        <Search
-                                            size={16}
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                        />
-                                        <input
-                                            value={search}
-                                            onChange={(e) => {
-                                                setSearch(e.target.value);
-                                                setCurrentPage(1);
-                                            }}
-                                            type="text"
-                                            id="search"
-                                            className="border border-gray-300 rounded-md h-10 pl-10 pr-4 w-full placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
-                                            placeholder={isDeviceView ? "Cari Device..." : "Cari Tipe Device..."}
-                                        />
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* ADD BUTTONS */}
-                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <DialogDeviceTambah onSuccess={handleRefresh}>
-                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white gap-2 h-10">
-                                    <Plus size={18} />
-                                    <span className="font-medium">Tambah Device</span>
-                                </Button>
-                            </DialogDeviceTambah>
-                            <DialogTipeDeviceTambah onSuccess={handleRefresh}>
-                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white gap-2 h-10">
-                                    <Plus size={18} />
-                                    <span className="font-medium">Tambah Tipe Device</span>
-                                </Button>
-                            </DialogTipeDeviceTambah>
-                        </div>
+                    {/* BAGIAN KANAN: SEARCH BAR */}
+                    <div className="w-full sm:w-72 order-1 sm:order-2">
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <div className="relative">
+                                <Search
+                                    size={16}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                />
+                                <input
+                                    value={search}
+                                    onChange={(e) => {
+                                        setSearch(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    type="text"
+                                    id="search"
+                                    className="border border-gray-300 rounded-md h-10 pl-10 pr-4 w-full placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
+                                    placeholder={isDeviceView ? "Cari Device..." : "Cari Tipe Device..."}
+                                />
+                            </div>
+                        </form>
                     </div>
                 </div>
 
