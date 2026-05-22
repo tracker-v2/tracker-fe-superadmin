@@ -269,7 +269,7 @@ export function DialogDeviceTambah({
                                         <FormControl>
                                             <Input
                                                 {...field}
-                                                placeholder="Contoh: fmb920-100"
+                                                placeholder="Example: fmb920-100"
                                                 disabled={isCreatingSequence}
                                             />
                                         </FormControl>

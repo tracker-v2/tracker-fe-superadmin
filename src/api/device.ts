@@ -24,7 +24,7 @@ export const createDeviceApi = async (data: CreateDeviceRequest): Promise<Device
     isActive: data.isActive ?? true,
   };
   
-  console.log('🔵 POST /devices/create payload:', payload);
+  console.log('POST /devices/create payload:', payload);
   
   const res = await axios.post(`/devices/create`, payload);
   return res.data.data;

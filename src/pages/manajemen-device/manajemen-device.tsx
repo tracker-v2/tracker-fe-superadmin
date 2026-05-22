@@ -139,27 +139,47 @@ export function ManajemenDevicePage() {
                         </Button>
                     </div>
 
-                    {/* BAGIAN KANAN: SEARCH BAR */}
-                    <div className="w-full sm:w-72 order-1 sm:order-2">
-                        <form onSubmit={(e) => e.preventDefault()}>
-                            <div className="relative">
-                                <Search
-                                    size={16}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                />
-                                <input
-                                    value={search}
-                                    onChange={(e) => {
-                                        setSearch(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                    type="text"
-                                    id="search"
-                                    className="border border-gray-300 rounded-md h-10 pl-10 pr-4 w-full placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
-                                    placeholder={isDeviceView ? "Cari Device..." : "Cari Tipe Device..."}
-                                />
-                            </div>
-                        </form>
+                    {/* BAGIAN KANAN: SEARCH BAR & ADD BUTTON */}
+                    <div className="flex flex-col sm:flex-row w-full sm:w-auto items-center gap-2 order-1 sm:order-2">
+                        <div className="w-full sm:w-72">
+                            <form onSubmit={(e) => e.preventDefault()}>
+                                <div className="relative">
+                                    <Search
+                                        size={16}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                    />
+                                    <input
+                                        value={search}
+                                        onChange={(e) => {
+                                            setSearch(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        type="text"
+                                        id="search"
+                                        className="border border-gray-300 rounded-md h-10 pl-10 pr-4 w-full placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition"
+                                        placeholder={isDeviceView ? "Cari Device..." : "Cari Tipe Device..."}
+                                    />
+                                </div>
+                            </form>
+                        </div>
+
+                        {isDeviceView ? (
+                            <DialogDeviceTambah onSuccess={handleRefresh}>
+                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 gap-2 h-10">
+                                    <Plus size={18} />
+                                    <span className="hidden sm:inline">Tambah Device</span>
+                                    <span className="sm:hidden">Tambah</span>
+                                </Button>
+                            </DialogDeviceTambah>
+                        ) : (
+                            <DialogTipeDeviceTambah onSuccess={handleRefresh}>
+                                <Button className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 gap-2 h-10">
+                                    <Plus size={18} />
+                                    <span className="hidden sm:inline">Tambah Tipe Device</span>
+                                    <span className="sm:hidden">Tambah</span>
+                                </Button>
+                            </DialogTipeDeviceTambah>
+                        )}
                     </div>
                 </div>
 
