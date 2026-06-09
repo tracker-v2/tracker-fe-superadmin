@@ -77,43 +77,56 @@ export function DialogDeviceTambah({
         },
     })
 
-    // Fetch device models
+    // FETCH
     const { data: deviceModels, isLoading: isLoadingModels } = useSWR<DeviceModelOption[]>(
         ['/device-models'],
         () => getDeviceModelsApi()
     )
-
-    // Fetch vehicles
     const { data: vehicles, isLoading: isLoadingVehicles } = useSWR<VehicleOption[]>(
         '/vehicles',
         getAllVehicle
     )
-
-    // Fetch existing devices
     const { data: existingDevices, isLoading: isLoadingDevices } = useSWR(
         '/devices/list',
         () => getDevicesListApi()
     )
 
-    // Filter vehicles yang belum punya device
+    // filter available vehicles - nanti tampilkan yang belum punya device
     const availableVehicles = useMemo(() => {
         if (!vehicles || !existingDevices) return vehicles ?? []
         
-        const vehicleIdsWithDevice = new Set(existingDevices.map((device: any) => device.vehicleId))
+        const vehicleIdsWithDevice = new Set(existingDevices.map((device: { vehicleId: number }) => device.vehicleId))
         return vehicles.filter((vehicle) => !vehicleIdsWithDevice.has(vehicle.id))
     }, [vehicles, existingDevices])
 
     // Fetch pinouts based on selected device model
     const selectedModelId = form.watch('deviceModelId')
-    const { data: pinouts, isLoading: isLoadingPinouts } = useSWR<DeviceModelPinout[]>(
+    const { data: pinouts, isLoading: isLoadingPinouts, error: pinoutsError } = useSWR<DeviceModelPinout[]>(
         selectedModelId ? `/device-model-pinout/by-model/${selectedModelId}` : null,
         selectedModelId ? () => deviceModelPinoutApi.getByDeviceModel(selectedModelId) : null
     )
+
+    // Debug logging
+    if (selectedModelId && pinoutsError) {
+        console.error('❌ Error fetching pinouts:', pinoutsError)
+    }
+    if (selectedModelId && pinouts) {
+        console.log(`✅ Pinouts loaded for model ${selectedModelId}:`, pinouts)
+    }
+
+    // Debug logging
+    if (selectedModelId && pinoutsError) {
+        console.error('❌ Error fetching pinouts:', pinoutsError)
+    }
+    if (selectedModelId && pinouts) {
+        console.log(`✅ Pinouts loaded for model ${selectedModelId}:`, pinouts)
+    }
 
     // Reset pinout when model changes
     const handleModelChange = (modelId: number) => {
         form.setValue('deviceModelId', modelId)
         form.setValue('deviceModelPinoutId', undefined)
+        console.log('📝 Device model changed to:', modelId)
     }
 
 
@@ -462,6 +475,11 @@ export function DialogDeviceTambah({
                         </div>
 
                         {/* SECTION 4: FEATURES (OPTIONAL) */}
+                        {/* 
+                            NOTE: Pinout disimpan di tabel device_features, bukan device.
+                            Flow: Pilih pinout → Create device → POST /device-features/create
+                            Tabel device_features menyimpan: deviceId, featureId, deviceModelPinoutId
+                        */}
                         <div>                            
                             {/* Pinout */}
                             <FormField
@@ -490,7 +508,12 @@ export function DialogDeviceTambah({
                                                         </div>
                                                     ) : isLoadingPinouts ? (
                                                         <div className="py-6 text-center text-sm text-gray-500">
+                                                            <Loader2 className="animate-spin mx-auto mb-2 h-4 w-4" />
                                                             Loading pinout...
+                                                        </div>
+                                                    ) : pinoutsError ? (
+                                                        <div className="py-6 text-center text-sm text-red-500">
+                                                            ⚠️ Error memuat pinout. Silakan coba lagi.
                                                         </div>
                                                     ) : (pinouts?.length ?? 0) === 0 ? (
                                                         <div className="py-6 text-center text-sm text-gray-500">

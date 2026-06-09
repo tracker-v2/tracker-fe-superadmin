@@ -56,7 +56,7 @@ const initialFormData: KendaraanFormData = {
   hasFuel: false,
   hasOnOff: false,
   fuelCalibration: "",
-  onOffProcess: "PROCESS_ON",
+  onOffProcess: "UPDATED_ON",
 };
 
 export function DialogKendaraanTambah({
@@ -114,7 +114,7 @@ export function DialogKendaraanTambah({
       }
       // Reset onOffProcess to default when On/Off is unchecked
       if (name === "hasOnOff" && !checked) {
-        updates.onOffProcess = "PROCESS_ON";
+        updates.onOffProcess = "UPDATED_ON";
       }
       return { ...prev, ...updates };
     });
@@ -227,7 +227,7 @@ export function DialogKendaraanTambah({
             return;
           }
 
-          const processType = (formData.onOffProcess || "PROCESS_ON") as "PROCESS_ON" | "PROCESS_OFF";
+          const processType = (formData.onOffProcess || "UPDATED_ON") as "UPDATED_ON" | "UPDATED_OFF";
           await toggleRemoteStarter(vehicleId, company.codeConfirm, processType);
           toast.success("Fitur On/Off berhasil diaktifkan");
         } catch (starterError) {
@@ -528,7 +528,7 @@ export function DialogKendaraanTambah({
                     Process
                   </Label>
                   <Select
-                    value={formData.onOffProcess || "PROCESS_ON"}
+                    value={formData.onOffProcess || "UPDATED_ON"}
                     onValueChange={(value) => handleSelectChange("onOffProcess", value)}
                     disabled={!formData.hasOnOff}
                   >
@@ -536,8 +536,8 @@ export function DialogKendaraanTambah({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PROCESS_ON">PROCESS_ON</SelectItem>
-                      <SelectItem value="PROCESS_OFF">PROCESS_OFF</SelectItem>
+                      <SelectItem value="UPDATED_ON">UPDATED_ON</SelectItem>
+                      <SelectItem value="UPDATED_OFF">UPDATED_OFF</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

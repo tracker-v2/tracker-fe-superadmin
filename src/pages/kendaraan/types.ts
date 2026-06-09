@@ -50,6 +50,8 @@ export interface Vehicle {
   model: string;
   lastOdometer: number;
   markingNumber: string;
+  imei?: string;
+  simNumber?: string;
   enginePower?: number;
   tireCount?: number;
   torque?: number;

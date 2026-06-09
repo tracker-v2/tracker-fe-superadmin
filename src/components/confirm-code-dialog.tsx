@@ -16,7 +16,7 @@ interface ConfirmCodeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (code: string) => Promise<void>;
-  action: "PROCESS_ON" | "PROCESS_OFF";
+  action: "UPDATED_ON" | "UPDATED_OFF";
   isLoading: boolean;
 }
 
@@ -53,13 +53,13 @@ export const ConfirmCodeDialog = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {action === "PROCESS_ON" 
+            {action === "UPDATED_ON" 
               ? "Aktifkan Kendaraan" 
               : "Nonaktifkan Kendaraan"}
           </DialogTitle>
           <DialogDescription>
             Masukkan kode konfirmasi untuk{" "}
-            {action === "PROCESS_ON" ? "mengaktifkan" : "menonaktifkan"} kendaraan.
+            {action === "UPDATED_ON" ? "mengaktifkan" : "menonaktifkan"} kendaraan.
           </DialogDescription>
         </DialogHeader>
         
@@ -98,7 +98,7 @@ export const ConfirmCodeDialog = ({
               type="submit" 
               disabled={isLoading}
               className={
-                action === "PROCESS_ON"
+                action === "UPDATED_ON"
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700"
               }

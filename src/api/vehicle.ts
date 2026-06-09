@@ -68,7 +68,7 @@ export const getStatusFeature = async (vehicleId: number) => {
 
 export const toggleVehicleStarter = async (
   vehicleId: number,
-  action: "PROCESS_ON" | "PROCESS_OFF",
+  action: "UPDATED_ON" | "UPDATED_OFF",
   codeConfirm: string
 ) => {
   const res = await axios.post(
@@ -125,7 +125,7 @@ export const editVehicleSuperAdmin = async (vehicleId: number, companyId: number
 };
 
 export const getVehicleDetail = async (vehicleId: number, companyId: number) => {
-  const res = await axios.get(`vehicles/vehicle-details/${vehicleId}`, {
+  const res = await axios.get(`vehicles/vehicle-detail/${vehicleId}`, {
     params: { companyId }
   });
   return res.data.data;

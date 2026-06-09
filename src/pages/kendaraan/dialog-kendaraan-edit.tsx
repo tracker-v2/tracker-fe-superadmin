@@ -20,6 +20,7 @@ import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
 import { toast } from "sonner";
 import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
 
+
 interface DialogKendaraanEditProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -84,9 +85,12 @@ export function DialogKendaraanEdit({
       console.log("Fuel calibration data:", fuelCalib);
 
       if (vehicle) {
-        // Extract device info dari vehicleData
         const imei = vehicle.imei || "";
         const simNumber = vehicle.simNumber || "";
+
+        // console.log("Extracted IMEI:", imei);
+        // console.log("Extracted SIM Number:", simNumber);
+        // console.log("Full vehicle object:", vehicle);
 
         // Parse fuel calibration coefficients array back into a string for the input
         const hasFuelData = Array.isArray(fuelCalib) && fuelCalib.length > 0;
@@ -94,10 +98,6 @@ export function DialogKendaraanEdit({
           ? (fuelCalib as number[]).join(", ")
           : "";
 
-        // NOTE: Remote Starter (On/Off) active status is not yet exposed via the main
-        // vehicle detail endpoint. Map it from vehicleData.hasRemoteStarter or a
-        // dedicated GET endpoint when available from the backend.
-        // For now, hasOnOff defaults to false on load.
         const hasOnOffStatus = false;
 
         setFormData({
@@ -120,6 +120,9 @@ export function DialogKendaraanEdit({
           imei: imei,
           simNumber: simNumber,
         });
+
+        // DEBUG: Log form data after setting
+        console.log("Form data set with IMEI:", imei, "SIM:", simNumber);
       } else {
         console.log("No vehicle data found");
         setFormData(initialFormData);
@@ -271,7 +274,7 @@ export function DialogKendaraanEdit({
 
     try {
       setIsSubmitting(true);
-      await toggleRemoteStarter(pendingVehicleId, code, "PROCESS_ON");
+      await toggleRemoteStarter(pendingVehicleId, code, "UPDATED_ON");
       toast.success("Fitur On/Off berhasil diaktifkan");
       setConfirmCodeOpen(false);
       setPendingVehicleId(null);
@@ -357,23 +360,6 @@ export function DialogKendaraanEdit({
             </div>
           </div>
 
-          {/* Specifications Row */}
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="tankCapacity" className="text-sm font-medium">
-                Kapasitas Tangki
-              </Label>
-              <Input
-                id="tankCapacity"
-                name="tankCapacity"
-                placeholder="Masukan angka kapasitas tangki"
-                value={formData.tankCapacity}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-              />
-            </div>
-          </div>
-
           {/* Vehicle Details Row */}
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -419,8 +405,8 @@ export function DialogKendaraanEdit({
             </div>
           </div>
 
-          {/* Vehicle Year, Brand, Model Row */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Vehicle Year and Marking Number Row */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="year" className="text-sm font-medium">
                 Tahun
@@ -428,6 +414,7 @@ export function DialogKendaraanEdit({
               <Input
                 id="year"
                 name="year"
+                type="number"
                 placeholder="Masukan tahun pembuatan"
                 value={formData.year}
                 onChange={handleInputChange}
@@ -436,47 +423,18 @@ export function DialogKendaraanEdit({
             </div>
 
             <div>
-              <Label htmlFor="brand" className="text-sm font-medium">
-                Merk
+              <Label htmlFor="markingNumber" className="text-sm font-medium">
+                Marking Number
               </Label>
               <Input
-                id="brand"
-                name="brand"
-                placeholder="Masukan merk"
-                value={formData.brand}
+                id="markingNumber"
+                name="markingNumber"
+                placeholder="Masukan marking number"
+                value={formData.markingNumber || ""}
                 onChange={handleInputChange}
                 className="mt-1 text-sm bg-white"
               />
             </div>
-
-            <div>
-              <Label htmlFor="model" className="text-sm font-medium">
-                Model
-              </Label>
-              <Input
-                id="model"
-                name="model"
-                placeholder="Masukan model"
-                value={formData.model}
-                onChange={handleInputChange}
-                className="mt-1 text-sm bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Marking Number */}
-          <div>
-            <Label htmlFor="markingNumber" className="text-sm font-medium">
-              Marking Number
-            </Label>
-            <Input
-              id="markingNumber"
-              name="markingNumber"
-              placeholder="Masukan marking number"
-              value={formData.markingNumber || ""}
-              onChange={handleInputChange}
-              className="mt-1 text-sm bg-white"
-            />
           </div>
 
           {/* Device Info Section */}
@@ -491,7 +449,7 @@ export function DialogKendaraanEdit({
                 </Label>
                 <Input
                   id="imei"
-                  value={formData.imei || (loadingVehicle ? "Loading..." : "")}
+                  value={loadingVehicle ? "Loading..." : (formData.imei || "")}
                   readOnly
                   className="mt-1 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
@@ -503,7 +461,7 @@ export function DialogKendaraanEdit({
                 </Label>
                 <Input
                   id="simNumber"
-                  value={formData.simNumber || (loadingVehicle ? "Loading..." : "")}
+                  value={loadingVehicle ? "Loading..." : (formData.simNumber || "")}
                   readOnly
                   className="mt-1 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
@@ -517,13 +475,10 @@ export function DialogKendaraanEdit({
               Info Tambahan
             </h3>
 
-            <div className="grid grid-cols-2 gap-8 items-start">
-              {/* Left Side - Fitur */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 block mb-3">
-                  Fitur
-                </Label>
-                <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Row 1: Fuel Checkbox & Kalibrasi Fuel Input */}
+              <div className="grid grid-cols-2 gap-8 items-end">
+                <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="hasFuel"
@@ -532,11 +487,36 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasFuel", checked === true)
                       }
                     />
-                    <Label htmlFor="hasFuel" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasFuel"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       Fuel
                     </Label>
                   </div>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="fuelCalibration"
+                    className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"}`}
+                  >
+                    Kalibrasi Fuel
+                  </Label>
+                  <Input
+                    id="fuelCalibration"
+                    name="fuelCalibration"
+                    placeholder="Masukan koefisien kalibrasi fuel"
+                    value={formData.fuelCalibration ?? ""}
+                    onChange={handleInputChange}
+                    disabled={!formData.hasFuel}
+                    className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
 
+              {/* Row 2: On/Off Checkbox */}
+              <div className="grid grid-cols-2 gap-8 items-end">
+                <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="hasOnOff"
@@ -545,31 +525,17 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasOnOff", checked === true)
                       }
                     />
-                    <Label htmlFor="hasOnOff" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasOnOff"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       On/Off
                     </Label>
                   </div>
                 </div>
-              </div>
-
-              {/* Right Side - Kalibrasi Fuel */}
-              <div>
-                <Label
-                  htmlFor="fuelCalibration"
-                  className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
-                    }`}
-                >
-                  Kalibrasi Fuel
-                </Label>
-                <Input
-                  id="fuelCalibration"
-                  name="fuelCalibration"
-                  placeholder="Masukan koefisien kalibrasi fuel"
-                  value={formData.fuelCalibration ?? ""}
-                  onChange={handleInputChange}
-                  disabled={!formData.hasFuel}
-                  className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+                <div>
+                  {/* Empty or placeholder */}
+                </div>
               </div>
             </div>
           </div>
@@ -598,7 +564,7 @@ export function DialogKendaraanEdit({
           open={confirmCodeOpen}
           onOpenChange={setConfirmCodeOpen}
           onConfirm={handleConfirmCodeSubmit}
-          action="PROCESS_ON"
+          action="UPDATED_ON"
           isLoading={isSubmitting}
         />
       </DialogContent>
