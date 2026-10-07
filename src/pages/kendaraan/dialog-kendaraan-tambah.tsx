@@ -21,6 +21,7 @@ import { assignFeatureToVehicle } from "@/api/vehicle-features";
 import { getCompaniesApi } from "@/api/companies";
 import { toast } from "sonner";
 import { KendaraanFormData } from "@/pages/kendaraan/types";
+import { updateHourmeter, updateOdometer } from "@/api/vehicle";
 
 interface DialogKendaraanTambahProps {
   open: boolean;
@@ -34,6 +35,8 @@ interface VehicleModel {
   vehicleType: string;
   brand: string;
   model: string;
+  hasOdometer?: boolean;
+  hasHourmeter?: boolean;
 }
 
 interface Company {
@@ -56,8 +59,20 @@ const initialFormData: KendaraanFormData = {
   hasFuel: false,
   hasOnOff: false,
   fuelCalibration: "",
-  onOffProcess: "PROCESS_ON",
+  onOffProcess: "UPDATED_ON",
 };
+
+const HOURMETER_ONLY = [
+  "EXCAVATOR",
+  "BULLDOZER",
+  "WHEEL_LOADER",
+  "GRADER",
+  "ROAD_ROLLER",
+  "WHEEL_TRACKTOR",
+  "WHEEL_TRACTOR",
+];
+const ODOMETER_ONLY = ["MPV", "MOBIL_PENUMPANG", "PICKUP_TRUCK"];
+// selain dua daftar di atas (DUMP_TRUCK, mixer, crane truck, dll) dan tipe yang belum terdaftar: tampil keduanya
 
 export function DialogKendaraanTambah({
   open,
@@ -90,12 +105,28 @@ export function DialogKendaraanTambah({
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: name === "year" ? Number(value) : value,
     }));
+  };
+
+  const handleDecimalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const cleaned = value
+      .replace(/[^\d.,]/g, "") // buang selain angka, titik, koma
+      .replace(/,/g, ".") // koma jadi titik di state
+      .replace(/(\..*)\./g, "$1"); // hanya satu pemisah desimal
+    setFormData((prev) => ({ ...prev, [name]: cleaned }));
+  };
+
+  const handleIntegerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value.replace(/\D/g, "") }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -105,7 +136,10 @@ export function DialogKendaraanTambah({
     }));
   };
 
-  const handleCheckboxChange = (name: "hasFuel" | "hasOnOff", checked: boolean) => {
+  const handleCheckboxChange = (
+    name: "hasFuel" | "hasOnOff",
+    checked: boolean,
+  ) => {
     setFormData((prev) => {
       const updates: Partial<KendaraanFormData> = { [name]: checked };
       // Auto-clear fuelCalibration when Fuel is unchecked
@@ -114,7 +148,7 @@ export function DialogKendaraanTambah({
       }
       // Reset onOffProcess to default when On/Off is unchecked
       if (name === "hasOnOff" && !checked) {
-        updates.onOffProcess = "PROCESS_ON";
+        updates.onOffProcess = "UPDATED_ON";
       }
       return { ...prev, ...updates };
     });
@@ -144,20 +178,9 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    // Validation: Cannot have both Fuel and On/Off checked (backend only supports 1 feature per vehicle)
-    if (formData.hasFuel && formData.hasOnOff) {
-      toast.error("Hanya boleh memilih satu fitur antara Fuel atau On/Off. Fitur multiple sedang dalam pengembangan.");
-      return;
-    }
-
     // Validation: On/Off must have Process selected
     if (formData.hasOnOff && !formData.onOffProcess) {
       toast.error("Pilih Process (ON atau OFF) untuk fitur On/Off");
-      return;
-    }
-
-    if (!formData.image?.trim()) {
-      toast.error("Gambar kendaraan tidak boleh kosong");
       return;
     }
 
@@ -193,10 +216,14 @@ export function DialogKendaraanTambah({
             await assignFeatureToVehicle(vehicleId, 1); // Feature ID 1 = ON/OFF
             toast.success("Fitur On/Off berhasil diassign");
           } catch (onOffFeatureError) {
-            console.error("Failed to assign On/Off feature:", onOffFeatureError);
+            console.error(
+              "Failed to assign On/Off feature:",
+              onOffFeatureError,
+            );
             toast.warning("Gagal mengassign fitur On/Off ke kendaraan");
           }
-        } else if (formData.hasFuel) {
+        }
+        if (formData.hasFuel) {
           try {
             await assignFeatureToVehicle(vehicleId, 2); // Feature ID 2 = FUEL
             toast.success("Fitur Fuel berhasil diassign");
@@ -223,7 +250,9 @@ export function DialogKendaraanTambah({
           }
         } catch (fuelError) {
           console.error("Failed to set fuel calibration:", fuelError);
-          toast.warning("Kendaraan berhasil dibuat, namun gagal mengatur fitur Fuel");
+          toast.warning(
+            "Kendaraan berhasil dibuat, namun gagal mengatur fitur Fuel",
+          );
         }
       }
 
@@ -231,21 +260,63 @@ export function DialogKendaraanTambah({
       if (formData.hasOnOff && vehicleId) {
         try {
           // Fetch company to get code_confirm
-          const companies = await getCompaniesApi() as Company[];
+          const companies = (await getCompaniesApi()) as Company[];
           const company = companies.find((c) => c.id === companyId);
-          
+
           if (!company?.codeConfirm) {
-            toast.error("Kode konfirmasi company tidak ditemukan");
+            throw new Error("Kode konfirmasi company tidak ditemukan");
             return;
           }
 
-          const processType = (formData.onOffProcess || "PROCESS_ON") as "PROCESS_ON" | "PROCESS_OFF";
-          await toggleRemoteStarter(vehicleId, company.codeConfirm, processType);
+          const processType = (formData.onOffProcess || "UPDATED_ON") as
+            | "UPDATED_ON"
+            | "UPDATED_OFF";
+          await toggleRemoteStarter(
+            vehicleId,
+            company.codeConfirm,
+            processType,
+          );
           toast.success("Fitur On/Off berhasil diaktifkan");
         } catch (starterError) {
-          console.error("Failed to enable remote starter:", starterError);
-          // toast.error("Gagal mengaktifkan fitur On/Off. Silakan coba lagi.");
-          return;
+          const err = starterError as any;
+          const status = err?.response?.status;
+          const backendMessage = err?.response?.data?.message;
+          console.error(
+            "Failed to enable remote starter:",
+            status,
+            backendMessage,
+          );
+
+          if (status === 403) {
+            toast.info(
+              "Kendaraan tersimpan. Fitur On/Off belum bisa diaktifkan karena relay belum terpasang atau belum terdeteksi.",
+            );
+          } else {
+            toast.warning(
+              backendMessage ||
+                "Kendaraan tersimpan, tapi gagal mengaktifkan On/Off",
+            );
+          }
+        }
+      }
+
+      // Step 5: odometer / hourmeter awal (opsional)
+      if (vehicleId && (formData.hourmeter || formData.odometer)) {
+        try {
+          if (formData.hourmeter) {
+            await updateHourmeter(vehicleId, Number(formData.hourmeter)); // jam
+          }
+          if (formData.odometer) {
+            await updateOdometer(vehicleId, Number(formData.odometer));
+          }
+        } catch (meterError) {
+          console.error(
+            "Failed to set odometer/hourmeter:",
+            (meterError as any)?.response?.data,
+          );
+          toast.warning(
+            "Kendaraan tersimpan, tapi gagal menyimpan odometer/hourmeter",
+          );
         }
       }
 
@@ -261,10 +332,11 @@ export function DialogKendaraanTambah({
 
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      } else if (typeof error === "object" && error !== null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const axiosError = error as Record<string, any>;
-        errorMessage = axiosError?.response?.data?.message ||
+        errorMessage =
+          axiosError?.response?.data?.message ||
           axiosError?.response?.data?.error ||
           errorMessage;
       }
@@ -282,7 +354,24 @@ export function DialogKendaraanTambah({
     onOpenChange(false);
   };
 
+  const selectedModel = vehicleModels.find(
+    (m) => m.id === formData.vehicleModelId,
+  );
 
+  const vehicleType = selectedModel?.vehicleType?.toUpperCase() ?? "";
+
+  const supportsHourmeter =
+    !!selectedModel && !ODOMETER_ONLY.includes(vehicleType);
+  const supportsOdometer =
+    !!selectedModel && !HOURMETER_ONLY.includes(vehicleType);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      odometer: supportsOdometer ? prev.odometer : "",
+      hourmeter: supportsHourmeter ? prev.hourmeter : "",
+    }));
+  }, [supportsOdometer, supportsHourmeter]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -334,7 +423,9 @@ export function DialogKendaraanTambah({
                 </Label>
                 <Select
                   value={(formData.vehicleModelId || 0).toString()}
-                  onValueChange={(value) => handleSelectChange("vehicleModelId", value)}
+                  onValueChange={(value) =>
+                    handleSelectChange("vehicleModelId", value)
+                  }
                   disabled={loading}
                 >
                   <SelectTrigger className="mt-1 text-sm font-semibold bg-white">
@@ -354,7 +445,9 @@ export function DialogKendaraanTambah({
 
           {/* Display Selected Model Info */}
           {(() => {
-            const selected = vehicleModels.find((m) => m.id === formData.vehicleModelId);
+            const selected = vehicleModels.find(
+              (m) => m.id === formData.vehicleModelId,
+            );
             return selected ? (
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="grid grid-cols-3 gap-4 text-sm">
@@ -430,9 +523,11 @@ export function DialogKendaraanTambah({
               <Input
                 id="year"
                 name="year"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
                 placeholder="Masukan tahun pembuatan"
-                value={formData.year}
+                value={formData.year || ""}
                 onChange={handleInputChange}
                 className="mt-1 text-sm bg-white"
               />
@@ -453,6 +548,45 @@ export function DialogKendaraanTambah({
             </div>
           </div>
 
+          {(supportsOdometer || supportsHourmeter) && (
+            <div className="grid grid-cols-2 gap-4">
+              {supportsOdometer && (
+                <div>
+                  <Label htmlFor="odometer" className="text-sm font-medium">
+                    Odometer (km)
+                  </Label>
+                  <Input
+                    id="odometer"
+                    name="odometer"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Kosongkan jika tidak ada"
+                    value={formData.odometer ?? ""}
+                    onChange={handleIntegerChange}
+                    className="mt-1 text-sm bg-white"
+                  />
+                </div>
+              )}
+              {supportsHourmeter && (
+                <div>
+                  <Label htmlFor="hourmeter" className="text-sm font-medium">
+                    Hourmeter (jam)
+                  </Label>
+                  <Input
+                    id="hourmeter"
+                    name="hourmeter"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Contoh: 350.5"
+                    value={(formData.hourmeter ?? "").replace(".", ",")}
+                    onChange={handleDecimalChange}
+                    className="mt-1 text-sm bg-white"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Image String */}
           <div>
             <Label htmlFor="image" className="text-sm font-medium">
@@ -471,7 +605,9 @@ export function DialogKendaraanTambah({
 
           {/* Info Tambahan Section */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Info Tambahan</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              Info Tambahan
+            </h3>
             <div className="space-y-4">
               {/* Row 1: Fuel Checkbox & Kalibrasi Fuel Input */}
               <div className="grid grid-cols-2 gap-8 items-end">
@@ -495,8 +631,9 @@ export function DialogKendaraanTambah({
                 <div>
                   <Label
                     htmlFor="fuelCalibration"
-                    className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
-                      }`}
+                    className={`text-sm font-medium block mb-1 ${
+                      formData.hasFuel ? "text-gray-700" : "text-gray-400"
+                    }`}
                   >
                     Kalibrasi Fuel
                   </Label>
@@ -534,22 +671,25 @@ export function DialogKendaraanTambah({
                 <div>
                   <Label
                     htmlFor="onOffProcess"
-                    className={`text-sm font-medium block mb-1 ${formData.hasOnOff ? "text-gray-700" : "text-gray-400"
-                      }`}
+                    className={`text-sm font-medium block mb-1 ${
+                      formData.hasOnOff ? "text-gray-700" : "text-gray-400"
+                    }`}
                   >
                     Process
                   </Label>
                   <Select
-                    value={formData.onOffProcess || "PROCESS_ON"}
-                    onValueChange={(value) => handleSelectChange("onOffProcess", value)}
+                    value={formData.onOffProcess || "UPDATED_ON"}
+                    onValueChange={(value) =>
+                      handleSelectChange("onOffProcess", value)
+                    }
                     disabled={!formData.hasOnOff}
                   >
                     <SelectTrigger className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PROCESS_ON">PROCESS_ON</SelectItem>
-                      <SelectItem value="PROCESS_OFF">PROCESS_OFF</SelectItem>
+                      <SelectItem value="UPDATED_ON">Updated ON</SelectItem>
+                      <SelectItem value="UPDATED_OFF">Updated OFF</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
