@@ -46,6 +46,13 @@ interface Company {
   [key: string]: unknown;
 }
 
+interface Company {
+  id: number;
+  name: string;
+  codeConfirm: string;
+  [key: string]: unknown;
+}
+
 const initialFormData: KendaraanFormData = {
   licensePlate: "",
   description: "",
@@ -173,8 +180,9 @@ export function DialogKendaraanTambah({
       return;
     }
 
-    if (!formData.year || formData.year <= 0) {
-      toast.error("Tahun pembuatan harus valid");
+    // Validation: On/Off must have Process selected
+    if (formData.hasOnOff && !formData.onOffProcess) {
+      toast.error("Pilih Process (ON atau OFF) untuk fitur On/Off");
       return;
     }
 
