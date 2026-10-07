@@ -39,12 +39,6 @@ interface VehicleModel {
   hasHourmeter?: boolean;
 }
 
-interface Company {
-  id: number;
-  name: string;
-  codeConfirm: string;
-  [key: string]: unknown;
-}
 
 interface Company {
   id: number;
