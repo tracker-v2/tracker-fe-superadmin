@@ -6,6 +6,7 @@ export interface KendaraanFormData {
   description: string;
   vehicleType?: string;
   odometer?: string;
+  hourmeter?: string;
   tankCapacity?: string;
   frameNumber: string;
   engineNumber: string;
@@ -22,6 +23,7 @@ export interface KendaraanFormData {
   image?: string;
   imei?: string;
   simNumber?: string;
+  
 }
 
 export interface ModelKendaraanFormData {

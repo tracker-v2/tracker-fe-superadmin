@@ -1,11 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getVehicleDetail, editVehicleSuperAdmin, getFuelCalibration, postFuelCalibration } from "@/api/vehicle";
+import {
+  getVehicleDetail,
+  editVehicleSuperAdmin,
+  getFuelCalibration,
+  postFuelCalibration,
+} from "@/api/vehicle";
 import { toggleRemoteStarter } from "@/api/remote-starter";
 import {
   Select,
@@ -61,76 +71,88 @@ export function DialogKendaraanEdit({
   const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
   const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
 
-  const fetchVehicleData = useCallback(async (vehicleId: number, compId: number) => {
-    if (!vehicleId || !compId) {
-      console.log("No vehicleId or companyId provided");
-      return;
-    }
-
-    setLoadingVehicle(true);
-    console.log("Fetching vehicle data for vehicleId:", vehicleId, "companyId:", compId);
-
-    try {
-      // Fetch vehicle detail and fuel calibration in parallel
-      const [vehicleData, fuelCalibrationData] = await Promise.allSettled([
-        getVehicleDetail(vehicleId, compId),
-        getFuelCalibration(vehicleId),
-      ]);
-
-      const vehicle = vehicleData.status === "fulfilled" ? vehicleData.value : null;
-      const fuelCalib = fuelCalibrationData.status === "fulfilled" ? fuelCalibrationData.value : null;
-
-      console.log("Vehicle data received:", vehicle);
-      console.log("Fuel calibration data:", fuelCalib);
-
-      if (vehicle) {
-        // Extract device info dari vehicleData
-        const imei = vehicle.imei || "";
-        const simNumber = vehicle.simNumber || "";
-
-        // Parse fuel calibration coefficients array back into a string for the input
-        const hasFuelData = Array.isArray(fuelCalib) && fuelCalib.length > 0;
-        const fuelCalibrationStr = hasFuelData
-          ? (fuelCalib as number[]).join(", ")
-          : "";
-
-        // NOTE: Remote Starter (On/Off) active status is not yet exposed via the main
-        // vehicle detail endpoint. Map it from vehicleData.hasRemoteStarter or a
-        // dedicated GET endpoint when available from the backend.
-        // For now, hasOnOff defaults to false on load.
-        const hasOnOffStatus = false;
-
-        setFormData({
-          vehicleId: vehicleId,
-          licensePlate: vehicle.licensePlate || "",
-          description: vehicle.description || "",
-          vehicleType: vehicle.vehicleType || "",
-          odometer: vehicle.lastOdometer?.toString() || "",
-          tankCapacity: vehicle.fuelTank?.toString() || "",
-          frameNumber: vehicle.frameNumber || "",
-          engineNumber: vehicle.engineNumber || "",
-          color: vehicle.color || "",
-          year: vehicle.year || 0,
-          brand: vehicle.brand || "",
-          model: vehicle.model || "",
-          markingNumber: vehicle.markingNumber || "",
-          hasFuel: hasFuelData,
-          hasOnOff: hasOnOffStatus,
-          fuelCalibration: fuelCalibrationStr,
-          imei: imei,
-          simNumber: simNumber,
-        });
-      } else {
-        console.log("No vehicle data found");
-        setFormData(initialFormData);
+  const fetchVehicleData = useCallback(
+    async (vehicleId: number, compId: number) => {
+      if (!vehicleId || !compId) {
+        console.log("No vehicleId or companyId provided");
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching vehicle:", error);
-      setFormData(initialFormData);
-    } finally {
-      setLoadingVehicle(false);
-    }
-  }, []);
+
+      setLoadingVehicle(true);
+      console.log(
+        "Fetching vehicle data for vehicleId:",
+        vehicleId,
+        "companyId:",
+        compId,
+      );
+
+      try {
+        // Fetch vehicle detail and fuel calibration in parallel
+        const [vehicleData, fuelCalibrationData] = await Promise.allSettled([
+          getVehicleDetail(vehicleId, compId),
+          getFuelCalibration(vehicleId),
+        ]);
+
+        const vehicle =
+          vehicleData.status === "fulfilled" ? vehicleData.value : null;
+        const fuelCalib =
+          fuelCalibrationData.status === "fulfilled"
+            ? fuelCalibrationData.value
+            : null;
+
+        console.log("Vehicle data received:", vehicle);
+        console.log("Fuel calibration data:", fuelCalib);
+
+        if (vehicle) {
+          // Extract device info dari vehicleData
+          const imei = vehicle.imei || "";
+          const simNumber = vehicle.simNumber || "";
+
+          // Parse fuel calibration coefficients array back into a string for the input
+          const hasFuelData = Array.isArray(fuelCalib) && fuelCalib.length > 0;
+          const fuelCalibrationStr = hasFuelData
+            ? (fuelCalib as number[]).join(", ")
+            : "";
+
+          // NOTE: Remote Starter (On/Off) active status is not yet exposed via the main
+          // vehicle detail endpoint. Map it from vehicleData.hasRemoteStarter or a
+          // dedicated GET endpoint when available from the backend.
+          // For now, hasOnOff defaults to false on load.
+          const hasOnOffStatus = false;
+
+          setFormData({
+            vehicleId: vehicleId,
+            licensePlate: vehicle.licensePlate || "",
+            description: vehicle.description || "",
+            vehicleType: vehicle.vehicleType || "",
+            odometer: vehicle.lastOdometer?.toString() || "",
+            tankCapacity: vehicle.fuelTank?.toString() || "",
+            frameNumber: vehicle.frameNumber || "",
+            engineNumber: vehicle.engineNumber || "",
+            color: vehicle.color || "",
+            year: vehicle.year || 0,
+            brand: vehicle.brand || "",
+            model: vehicle.model || "",
+            markingNumber: vehicle.markingNumber || "",
+            hasFuel: hasFuelData,
+            hasOnOff: hasOnOffStatus,
+            fuelCalibration: fuelCalibrationStr,
+            imei: imei,
+            simNumber: simNumber,
+          });
+        } else {
+          console.log("No vehicle data found");
+          setFormData(initialFormData);
+        }
+      } catch (error) {
+        console.error("Error fetching vehicle:", error);
+        setFormData(initialFormData);
+      } finally {
+        setLoadingVehicle(false);
+      }
+    },
+    [],
+  );
 
   // Load initial data and nge fetch vehicle detail ketika dialog open
   useEffect(() => {
@@ -146,7 +168,9 @@ export function DialogKendaraanEdit({
     }
   }, [open, vehicle, companyId, fetchVehicleData]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -161,7 +185,10 @@ export function DialogKendaraanEdit({
     }));
   };
 
-  const handleCheckboxChange = (name: "hasFuel" | "hasOnOff", checked: boolean) => {
+  const handleCheckboxChange = (
+    name: "hasFuel" | "hasOnOff",
+    checked: boolean,
+  ) => {
     setFormData((prev) => {
       const updates: Partial<KendaraanFormData> = { [name]: checked };
       // Auto-clear fuelCalibration when Fuel is unchecked
@@ -203,7 +230,7 @@ export function DialogKendaraanEdit({
       await editVehicleSuperAdmin(
         vehicle.id,
         Number(companyId),
-        vehiclePayload
+        vehiclePayload,
       );
 
       toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
@@ -223,7 +250,9 @@ export function DialogKendaraanEdit({
           }
         } catch (fuelError) {
           console.error("Failed to update fuel calibration:", fuelError);
-          toast.warning("Kendaraan berhasil diperbarui, namun gagal mengatur fitur Fuel");
+          toast.warning(
+            "Kendaraan berhasil diperbarui, namun gagal mengatur fitur Fuel",
+          );
         }
       }
 
@@ -244,10 +273,11 @@ export function DialogKendaraanEdit({
       let errorMessage = "Gagal mengupdate kendaraan. Silakan coba lagi.";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      } else if (typeof error === "object" && error !== null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const axiosError = error as Record<string, any>;
-        errorMessage = axiosError?.response?.data?.message ||
+        errorMessage =
+          axiosError?.response?.data?.message ||
           axiosError?.response?.data?.error ||
           errorMessage;
       }
@@ -271,7 +301,7 @@ export function DialogKendaraanEdit({
 
     try {
       setIsSubmitting(true);
-      await toggleRemoteStarter(pendingVehicleId, code, "PROCESS_ON");
+      await toggleRemoteStarter(pendingVehicleId, code, "UPDATED_ON");
       toast.success("Fitur On/Off berhasil diaktifkan");
       setConfirmCodeOpen(false);
       setPendingVehicleId(null);
@@ -280,7 +310,9 @@ export function DialogKendaraanEdit({
       onSuccess?.();
     } catch (starterError) {
       console.error("Failed to enable remote starter:", starterError);
-      toast.error("Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.");
+      toast.error(
+        "Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -336,13 +368,17 @@ export function DialogKendaraanEdit({
                 </Label>
                 <Select
                   value={formData.vehicleType}
-                  onValueChange={(value) => handleSelectChange("vehicleType", value)}
+                  onValueChange={(value) =>
+                    handleSelectChange("vehicleType", value)
+                  }
                 >
                   <SelectTrigger className="mt-1 text-sm font-semibold bg-white">
                     <SelectValue placeholder="Pilih tipe kendaraan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MOBIL_PENUMPANG">Mobil Penumpang</SelectItem>
+                    <SelectItem value="MOBIL_PENUMPANG">
+                      Mobil Penumpang
+                    </SelectItem>
                     <SelectItem value="MOBIL_BEBAN">Mobil Beban</SelectItem>
                     <SelectItem value="PICKUP_TRUCK">Pickup Truck</SelectItem>
                     <SelectItem value="DUMP_TRUCK">Dump Truck</SelectItem>
@@ -486,7 +522,10 @@ export function DialogKendaraanEdit({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="imei" className="text-xs font-medium text-gray-600">
+                <Label
+                  htmlFor="imei"
+                  className="text-xs font-medium text-gray-600"
+                >
                   IMEI
                 </Label>
                 <Input
@@ -498,12 +537,17 @@ export function DialogKendaraanEdit({
               </div>
 
               <div>
-                <Label htmlFor="simNumber" className="text-xs font-medium text-gray-600">
+                <Label
+                  htmlFor="simNumber"
+                  className="text-xs font-medium text-gray-600"
+                >
                   No Simcard
                 </Label>
                 <Input
                   id="simNumber"
-                  value={formData.simNumber || (loadingVehicle ? "Loading..." : "")}
+                  value={
+                    formData.simNumber || (loadingVehicle ? "Loading..." : "")
+                  }
                   readOnly
                   className="mt-1 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
@@ -532,7 +576,10 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasFuel", checked === true)
                       }
                     />
-                    <Label htmlFor="hasFuel" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasFuel"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       Fuel
                     </Label>
                   </div>
@@ -545,7 +592,10 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasOnOff", checked === true)
                       }
                     />
-                    <Label htmlFor="hasOnOff" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasOnOff"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       On/Off
                     </Label>
                   </div>
@@ -556,8 +606,9 @@ export function DialogKendaraanEdit({
               <div>
                 <Label
                   htmlFor="fuelCalibration"
-                  className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
-                    }`}
+                  className={`text-sm font-medium block mb-1 ${
+                    formData.hasFuel ? "text-gray-700" : "text-gray-400"
+                  }`}
                 >
                   Kalibrasi Fuel
                 </Label>
@@ -598,7 +649,7 @@ export function DialogKendaraanEdit({
           open={confirmCodeOpen}
           onOpenChange={setConfirmCodeOpen}
           onConfirm={handleConfirmCodeSubmit}
-          action="PROCESS_ON"
+          action="UPDATED_ON"
           isLoading={isSubmitting}
         />
       </DialogContent>

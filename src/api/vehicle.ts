@@ -11,7 +11,10 @@ export const getVehiclesApi = async (companyId: number) => {
 const fetcher = (url: string) => axios.get(url).then((res) => res.data);
 
 export const useVehicleTracking = (vehicleId: number | null) => {
-  const { data, error, isLoading } = useSWR(vehicleId ? `/vehicles/tracking/${vehicleId}` : null, fetcher);
+  const { data, error, isLoading } = useSWR(
+    vehicleId ? `/vehicles/tracking/${vehicleId}` : null,
+    fetcher,
+  );
 
   return {
     trackingData: data,
@@ -41,7 +44,9 @@ export const getAllVehicle = async () => {
 
 //api for get route vehicle
 export const getRouteVehicle = async (vehicleId: number, date: string) => {
-  const res = await axios.get(`vehicles/${vehicleId}/routes`, { params: { date } });
+  const res = await axios.get(`vehicles/${vehicleId}/routes`, {
+    params: { date },
+  });
   return res.data.data;
 };
 
@@ -52,12 +57,16 @@ export const getMachineActiveVehicle = async (companyId: number) => {
   return res.data.data;
 };
 
-
-export const getVehicleActivityReport = async ( vehicleId: number, date: string ) => {
-  const res = await axios.get(`vehicles/activity/trip-report/${vehicleId}/date`, { params: { date } });
+export const getVehicleActivityReport = async (
+  vehicleId: number,
+  date: string,
+) => {
+  const res = await axios.get(
+    `vehicles/activity/trip-report/${vehicleId}/date`,
+    { params: { date } },
+  );
   return res.data.data;
 };
-  
 
 // api/vehicle.ts
 export const getStatusFeature = async (vehicleId: number) => {
@@ -65,19 +74,15 @@ export const getStatusFeature = async (vehicleId: number) => {
   return res.data;
 };
 
-
 export const toggleVehicleStarter = async (
   vehicleId: number,
-  action: "PROCESS_ON" | "PROCESS_OFF",
-  codeConfirm: string
+  action: "UPDATED_ON" | "UPDATED_OFF",
+  codeConfirm: string,
 ) => {
-  const res = await axios.post(
-    `vehicles/${vehicleId}/remote-starter/toggle`,
-    {
-      code_confirm: codeConfirm,
-      action: action,
-    }
-  );
+  const res = await axios.post(`vehicles/${vehicleId}/remote-starter/toggle`, {
+    code_confirm: codeConfirm,
+    action: action,
+  });
   return res.data;
 };
 
@@ -89,12 +94,15 @@ export const getDetailedListVehiclesByCompany = async (companyId: number) => {
   return res.data.data;
 };
 
-export const getVehicleByMarkingNumber = async (markingNumber: string, companyId: number) => {
+export const getVehicleByMarkingNumber = async (
+  markingNumber: string,
+  companyId: number,
+) => {
   const res = await axios.get(`vehicles/marking-number/${markingNumber}`, {
-    params: { companyId }
+    params: { companyId },
   });
   return res.data.data;
-}
+};
 
 // count company - super admin
 
@@ -106,27 +114,34 @@ export const getVehiclesCountAllCompanies = async () => {
 export const getVehiclesCountByCompany = async (companyId: number) => {
   const res = await axios.get(`vehicles/count/sa/${companyId}`);
   return res.data.data.vehicle_count ?? 0;
-}
+};
 
 export const deleteVehicleById = async (vehicleId: number) => {
   const res = await axios.delete(`vehicles/${vehicleId}`);
   return res.data;
-}
+};
 
 // Edit Vehicle Super Admin
-export const editVehicleSuperAdmin = async (vehicleId: number, companyId: number, vehicleData: object) => {
+export const editVehicleSuperAdmin = async (
+  vehicleId: number,
+  companyId: number,
+  vehicleData: object,
+) => {
   const payload = {
     ...vehicleData,
-    companyId: companyId
+    companyId: companyId,
   };
 
   const res = await axios.put(`vehicles/superadmin/${vehicleId}`, payload);
   return res.data;
 };
 
-export const getVehicleDetail = async (vehicleId: number, companyId: number) => {
+export const getVehicleDetail = async (
+  vehicleId: number,
+  companyId: number,
+) => {
   const res = await axios.get(`vehicles/vehicle-details/${vehicleId}`, {
-    params: { companyId }
+    params: { companyId },
   });
   return res.data.data;
 };
@@ -136,17 +151,20 @@ export const getVehicleDetail = async (vehicleId: number, companyId: number) => 
 export const addVehicleModel = async (modelData: number) => {
   const res = await axios.post(`vehicles/models`, modelData);
   return res.data;
-}
+};
 
-export const editVehicleModelById = async (modelId: number, modelData: number) => {
+export const editVehicleModelById = async (
+  modelId: number,
+  modelData: number,
+) => {
   const res = await axios.put(`vehicles/models/${modelId}`, modelData);
   return res.data;
-}
+};
 
 export const deleteVehicleModelById = async (modelId: number) => {
   const res = await axios.delete(`vehicles/models/${modelId}`);
   return res.data;
-}
+};
 
 // POST VEHICLE API
 
@@ -171,19 +189,29 @@ export const addVehicleSuperAdmin = async (vehicleData: {
 export const getFuelCalibration = async (vehicleId: number) => {
   const res = await axios.get(`vehicles/${vehicleId}/fuel-calibration`);
   return res.data.data;
-}
+};
 
 export const postFuelCalibration = async (
   vehicleId: number,
-  fuelCalibrationCoefficients: number[]
+  fuelCalibrationCoefficients: number[],
 ) => {
-  const res = await axios.post(
-    `/vehicles/${vehicleId}/fuel-calibration`,
-    {
-      vehicleId,
-      fuelCalibrationCoefficients
-    }
-  );
+  const res = await axios.post(`/vehicles/${vehicleId}/fuel-calibration`, {
+    vehicleId,
+    fuelCalibrationCoefficients,
+  });
   return res.data;
 };
 
+export const updateHourmeter = async (vehicleId: number, hourmeter: number) => {
+  const res = await axios.put(`vehicles/${vehicleId}/hourmeter`, {
+    hour_meter: hourmeter,
+  });
+  return res.data;
+};
+
+export const updateOdometer = async (vehicleId: number, odometer: number) => {
+  const res = await axios.put(`vehicles/${vehicleId}/odometer`, {
+    odometer,
+  });
+  return res.data;
+};

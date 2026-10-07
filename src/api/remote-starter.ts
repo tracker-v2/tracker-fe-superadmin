@@ -3,7 +3,7 @@ import axios from "@/lib/axios";
 // Types for remote starter API
 export interface RemoteStarterToggleRequest {
   code_confirm: string;
-  action: "PROCESS_ON" | "PROCESS_OFF";
+  action: "UPDATED_ON" | "UPDATED_OFF";
 }
 
 export interface RemoteStarterToggleResponse {
@@ -11,7 +11,7 @@ export interface RemoteStarterToggleResponse {
   message: string;
   data?: {
     vehicleId: number;
-    action: "PROCESS_ON" | "PROCESS_OFF";
+    action: "UPDATED_ON" | "UPDATED_OFF";
     timestamp: string;
   };
 }
@@ -26,21 +26,22 @@ export interface RemoteStarterAvailabilityResponse {
  * Toggle remote starter ON/OFF for a vehicle
  * @param vehicleId - The vehicle ID
  * @param codeConfirm - Confirmation code from user
- * @param action - Action to perform: "PROCESS_ON" or "PROCESS_OFF"
+ * @param action - Action to perform: "UPDATED_ON" or "UPDATED_OFF"
  */
 export const toggleRemoteStarter = async (
   vehicleId: string | number,
   codeConfirm: string,
-  action: "PROCESS_ON" | "PROCESS_OFF"
+  action: "UPDATED_ON" | "UPDATED_OFF",
 ): Promise<RemoteStarterToggleResponse> => {
   const payload: RemoteStarterToggleRequest = {
     code_confirm: codeConfirm,
     action,
   };
-  return axios.post(
-    `/api/v1/vehicles/${vehicleId}/remote-starter/toggle`,
-    payload
+  const res = await axios.post(
+    `/vehicles/${vehicleId}/remote-starter/toggle`,
+    payload,
   );
+  return res.data;
 };
 
 /**
@@ -48,12 +49,10 @@ export const toggleRemoteStarter = async (
  * @param vehicleId - The vehicle ID
  */
 export const checkRemoteStarterAvailability = async (
-  vehicleId: string | number
+  vehicleId: string | number,
 ): Promise<RemoteStarterAvailabilityResponse> => {
   const res = await axios.get(
-    `/api/v1/vehicles/${vehicleId}/remote-starter/check`
+    `/api/v1/vehicles/${vehicleId}/remote-starter/check`,
   );
   return res.data.data;
 };
-
-
