@@ -16,7 +16,7 @@ interface ConfirmCodeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (code: string) => Promise<void>;
-  action: "UPDATED_ON" | "UPDATED_OFF";
+  action: "PROCESS_ON" | "PROCESS_OFF";
   isLoading: boolean;
 }
 
@@ -97,7 +97,7 @@ export const ConfirmCodeDialog = ({
               type="submit"
               disabled={isLoading}
               className={
-                action === "UPDATED_ON"
+                action === "PROCESS_ON"
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700"
               }
