@@ -242,7 +242,7 @@ export const VehicleDetail = () => {
   }
 
   const handleToggleStarter = () => {
-    const action = lastStatus === "UPDATED_ON" ? "PROCESS_OFF" : "PROCESS_ON";
+    const action = lastStatus === "UPDATED_ON" ? "UPDATED_OFF" : "UPDATED_ON";
     setPendingAction(action);
     setIsDialogOpen(true);
   };
