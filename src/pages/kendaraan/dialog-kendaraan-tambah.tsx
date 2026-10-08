@@ -39,7 +39,6 @@ interface VehicleModel {
   hasHourmeter?: boolean;
 }
 
-
 interface Company {
   id: number;
   name: string;
@@ -60,7 +59,7 @@ const initialFormData: KendaraanFormData = {
   hasFuel: false,
   hasOnOff: false,
   fuelCalibration: "",
-  onOffProcess: "UPDATED_ON",
+  onOffProcess: "PROCESS_ON",
 };
 
 const HOURMETER_ONLY = [
@@ -149,7 +148,7 @@ export function DialogKendaraanTambah({
       }
       // Reset onOffProcess to default when On/Off is unchecked
       if (name === "hasOnOff" && !checked) {
-        updates.onOffProcess = "UPDATED_ON";
+        updates.onOffProcess = "PROCESS_ON";
       }
       return { ...prev, ...updates };
     });
@@ -270,9 +269,9 @@ export function DialogKendaraanTambah({
             return;
           }
 
-          const processType = (formData.onOffProcess || "UPDATED_ON") as
-            | "UPDATED_ON"
-            | "UPDATED_OFF";
+          const processType = (formData.onOffProcess || "PROCESS_ON") as
+            | "PROCESS_ON"
+            | "PROCESS_OFF";
           await toggleRemoteStarter(
             vehicleId,
             company.codeConfirm,
@@ -680,7 +679,7 @@ export function DialogKendaraanTambah({
                     Process
                   </Label>
                   <Select
-                    value={formData.onOffProcess || "UPDATED_ON"}
+                    value={formData.onOffProcess || "PROCESS_ON"}
                     onValueChange={(value) =>
                       handleSelectChange("onOffProcess", value)
                     }
@@ -690,8 +689,8 @@ export function DialogKendaraanTambah({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UPDATED_ON">Updated ON</SelectItem>
-                      <SelectItem value="UPDATED_OFF">Updated OFF</SelectItem>
+                      <SelectItem value="PROCESS_ON">UPDATED ON</SelectItem>
+                      <SelectItem value="PROCESS_OFF">UPDATED OFF</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

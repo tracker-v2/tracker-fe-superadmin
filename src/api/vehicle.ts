@@ -76,7 +76,7 @@ export const getStatusFeature = async (vehicleId: number) => {
 
 export const toggleVehicleStarter = async (
   vehicleId: number,
-  action: "UPDATED_ON" | "UPDATED_OFF",
+  action: "PROCESS_ON" | "PROCESS_OFF",
   codeConfirm: string,
 ) => {
   const res = await axios.post(`vehicles/${vehicleId}/remote-starter/toggle`, {

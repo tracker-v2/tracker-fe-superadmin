@@ -53,13 +53,13 @@ export const ConfirmCodeDialog = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {action === "UPDATED_ON"
+            {action === "PROCESS_ON"
               ? "Aktifkan Kendaraan"
               : "Nonaktifkan Kendaraan"}
           </DialogTitle>
           <DialogDescription>
             Masukkan kode konfirmasi untuk{" "}
-            {action === "UPDATED_ON" ? "mengaktifkan" : "menonaktifkan"}{" "}
+            {action === "PROCESS_ON" ? "mengaktifkan" : "menonaktifkan"}{" "}
             kendaraan.
           </DialogDescription>
         </DialogHeader>
