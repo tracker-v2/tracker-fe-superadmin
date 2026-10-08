@@ -3,7 +3,7 @@ import axios from "@/lib/axios";
 // Types for remote starter API
 export interface RemoteStarterToggleRequest {
   code_confirm: string;
-  action: "UPDATED_ON" | "UPDATED_OFF";
+  action: "PROCESS_ON" | "PROCESS_OFF";
 }
 
 export interface RemoteStarterToggleResponse {
@@ -11,7 +11,7 @@ export interface RemoteStarterToggleResponse {
   message: string;
   data?: {
     vehicleId: number;
-    action: "UPDATED_ON" | "UPDATED_OFF";
+    action: "PROCESS_ON" | "PROCESS_OFF";
     timestamp: string;
   };
 }
@@ -26,12 +26,12 @@ export interface RemoteStarterAvailabilityResponse {
  * Toggle remote starter ON/OFF for a vehicle
  * @param vehicleId - The vehicle ID
  * @param codeConfirm - Confirmation code from user
- * @param action - Action to perform: "UPDATED_ON" or "UPDATED_OFF"
+ * @param action - Action to perform: "PROCESS_ON" or "PROCESS_OFF"
  */
 export const toggleRemoteStarter = async (
   vehicleId: string | number,
   codeConfirm: string,
-  action: "UPDATED_ON" | "UPDATED_OFF",
+  action: "PROCESS_ON" | "PROCESS_OFF",
 ): Promise<RemoteStarterToggleResponse> => {
   const payload: RemoteStarterToggleRequest = {
     code_confirm: codeConfirm,

@@ -2,14 +2,16 @@ import axios from "@/lib/axios";
 
 export interface StarterControlResponse {
   vehicleId: number;
-  controlStarter: "UPDATED_ON" | "UPDATED_OFF" | "UPDATED_ON" | "UPDATED_OFF";
+  controlStarter: "PROCESS_ON" | "PROCESS_OFF" | "UPDATED_ON" | "UPDATED_OFF";
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateStarterControlRequest {
-  controlStarter: "UPDATED_ON" | "UPDATED_OFF" | "UPDATED_ON" | "UPDATED_OFF";
+  controlStarter: "PROCESS_ON" | "PROCESS_OFF" | "UPDATED_ON" | "UPDATED_OFF";
 }
+
+
 
 // CREATE Starter Control (endpoint belum ada di BE)
 export const createStarterControlApi = async (

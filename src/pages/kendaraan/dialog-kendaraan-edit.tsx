@@ -301,7 +301,7 @@ export function DialogKendaraanEdit({
 
     try {
       setIsSubmitting(true);
-      await toggleRemoteStarter(pendingVehicleId, code, "UPDATED_ON");
+      await toggleRemoteStarter(pendingVehicleId, code, "PROCESS_ON");
       toast.success("Fitur On/Off berhasil diaktifkan");
       setConfirmCodeOpen(false);
       setPendingVehicleId(null);
@@ -649,7 +649,7 @@ export function DialogKendaraanEdit({
           open={confirmCodeOpen}
           onOpenChange={setConfirmCodeOpen}
           onConfirm={handleConfirmCodeSubmit}
-          action="UPDATED_ON"
+          action="PROCESS_ON"
           isLoading={isSubmitting}
         />
       </DialogContent>

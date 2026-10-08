@@ -71,7 +71,7 @@ export const VehicleDetail = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingAction, setPendingAction] = useState<
-    "UPDATED_ON" | "UPDATED_OFF" | null
+    "PROCESS_ON" | "PROCESS_OFF" | null
   >(null);
 
   const { trackingData, isLoading } = useVehicleLiveTracking(vehicleId);
@@ -242,7 +242,7 @@ export const VehicleDetail = () => {
   }
 
   const handleToggleStarter = () => {
-    const action = lastStatus === "UPDATED_ON" ? "UPDATED_OFF" : "UPDATED_ON";
+    const action = lastStatus === "UPDATED_ON" ? "PROCESS_OFF" : "PROCESS_ON";
     setPendingAction(action);
     setIsDialogOpen(true);
   };
@@ -263,6 +263,7 @@ export const VehicleDetail = () => {
       // Close dialog
       setIsDialogOpen(false);
       setPendingAction(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Show error message
       const errorMessage =
@@ -469,7 +470,7 @@ export const VehicleDetail = () => {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onConfirm={handleConfirmToggle}
-        action={pendingAction || "UPDATED_ON"}
+        action={pendingAction || "PROCESS_ON"}
         isLoading={isSubmitting}
       />
     </div>
