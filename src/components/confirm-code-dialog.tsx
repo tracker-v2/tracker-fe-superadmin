@@ -32,7 +32,7 @@ export const ConfirmCodeDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!code.trim()) {
       setError("Kode konfirmasi tidak boleh kosong");
       return;
@@ -53,16 +53,17 @@ export const ConfirmCodeDialog = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {action === "PROCESS_ON" 
-              ? "Aktifkan Kendaraan" 
+            {action === "PROCESS_ON"
+              ? "Aktifkan Kendaraan"
               : "Nonaktifkan Kendaraan"}
           </DialogTitle>
           <DialogDescription>
             Masukkan kode konfirmasi untuk{" "}
-            {action === "PROCESS_ON" ? "mengaktifkan" : "menonaktifkan"} kendaraan.
+            {action === "PROCESS_ON" ? "mengaktifkan" : "menonaktifkan"}{" "}
+            kendaraan.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -79,9 +80,7 @@ export const ConfirmCodeDialog = ({
                 disabled={isLoading}
                 className={error ? "border-red-500" : ""}
               />
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
           </div>
 
@@ -94,8 +93,8 @@ export const ConfirmCodeDialog = ({
             >
               Batal
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className={
                 action === "PROCESS_ON"
