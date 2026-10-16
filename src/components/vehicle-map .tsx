@@ -1,5 +1,10 @@
-
-import { MapContainer, TileLayer, Marker, Tooltip, ZoomControl } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Tooltip,
+  ZoomControl,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Vehicle } from "@/types/types";
@@ -21,8 +26,9 @@ interface Company {
 
 interface VehicleMapProps {
   vehicleLocations: Vehicle[];
+  selectedCompanyId?: number;
+  onCompanyChange: (companyId: number) => void;
 }
-
 // Normalize status to handle both formats (OPERATING/STOPPED/IDLE and active/inactive/idle)
 const normalizeStatus = (status: string): "on" | "off" | "idle" | "default" => {
   const statusUpper = status.toUpperCase();
@@ -40,7 +46,7 @@ const getStatusInfo = (status: string) => {
       color: "#16A34A",
       bgColor: "bg-green-100",
       textColor: "text-green-700",
-      label: "Beroperasi"
+      label: "Beroperasi",
     };
   }
   if (statusUpper === "STOPPED" || statusUpper === "INACTIVE") {
@@ -48,7 +54,7 @@ const getStatusInfo = (status: string) => {
       color: "#DC2626",
       bgColor: "bg-red-100",
       textColor: "text-red-700",
-      label: "Mati"
+      label: "Mati",
     };
   }
   if (statusUpper === "IDLE") {
@@ -56,23 +62,21 @@ const getStatusInfo = (status: string) => {
       color: "#EAB308",
       bgColor: "bg-yellow-100",
       textColor: "text-yellow-700",
-      label: "Idle"
+      label: "Idle",
     };
   }
   return {
     color: "#6B7280",
     bgColor: "bg-gray-100",
     textColor: "text-gray-700",
-    label: "Unknown"
+    label: "Unknown",
   };
 };
-
-
 
 // Helper to get icon path based on vehicle type and status
 const getVehicleIconPath = (
   vehicleType: string | undefined,
-  status: string
+  status: string,
 ) => {
   const finalVehicleType = vehicleType;
 
@@ -88,17 +92,17 @@ const getVehicleIconPath = (
 
   // Map vehicle types to icon names
   const iconMapping: { [key: string]: string } = {
-    "excavator": "exca",
+    excavator: "exca",
     "dump-truck": "truck",
-    "bulldozer": "bulldozer",
+    bulldozer: "bulldozer",
     "pickup-truck": "car",
-    "truck": "truck",
+    truck: "truck",
     "wheel-loader": "wheel-loader",
-    "grader": "grader",
+    grader: "grader",
     "mobil-penumpang": "car",
     "mobil-beban": "car",
     "road-roller": "road-roller",
-    "mpv": "car",
+    mpv: "car",
   };
 
   const iconName = iconMapping[type] || "car";
@@ -107,10 +111,7 @@ const getVehicleIconPath = (
 };
 
 // Helper to generate the custom vehicle marker icon
-const getVehicleIcon = (
-  vehicleType: string | undefined,
-  status: string
-) => {
+const getVehicleIcon = (vehicleType: string | undefined, status: string) => {
   const iconPath = getVehicleIconPath(vehicleType, status);
   const statusInfo = getStatusInfo(status);
 
@@ -151,13 +152,20 @@ const formatVehicleType = (type: string | undefined) => {
 
   if (type === "MPV") return "MPV";
 
-  return type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+  return type
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
-
-const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
-  const [companyList, setCompanyList] = useState<string[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<string | "">("");
+const VehicleMap: React.FC<VehicleMapProps> = ({
+  vehicleLocations,
+  selectedCompanyId,
+  onCompanyChange,
+}) => {
+  const [companyList, setCompanyList] = useState<
+    { id: number; name: string }[]
+  >([]);
 
   // Fetch companies dari API
   useEffect(() => {
@@ -165,7 +173,9 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
       try {
         const companies: Company[] = await getCompaniesApi();
         const companyNames = companies.map((company) => company.name);
-        setCompanyList(companyNames);
+        setCompanyList(
+          companies.map((company) => ({ id: company.id, name: company.name })),
+        );
       } catch (error) {
         console.error("Error fetching companies:", error);
         setCompanyList([]);
@@ -176,10 +186,6 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
   }, []);
 
   // Filter kendaraan berdasarkan perusahaan yang dipilih
-  const filteredVehicles =
-    selectedCompany && selectedCompany !== ""
-      ? vehicleLocations.filter((v) => v.company_name === selectedCompany)
-      : vehicleLocations;
 
   return (
     <div className="relative h-full w-full">
@@ -187,13 +193,15 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
       <div className="absolute z-[1000] left-4 top-4 bg-white rounded shadow p-2">
         <select
           className="border rounded px-2 py-1 text-sm"
-          value={selectedCompany}
-          onChange={(e) => setSelectedCompany(e.target.value)}
+          value={selectedCompanyId ?? ""}
+          onChange={(e) => onCompanyChange(Number(e.target.value))}
         >
-          <option value="">Pilih Perusahaan</option>
+          <option value="" disabled>
+            Pilih Perusahaan
+          </option>
           {companyList.map((company) => (
-            <option key={company} value={company}>
-              {company}
+            <option key={company.id} value={company.id}>
+              {company.name}
             </option>
           ))}
         </select>
@@ -210,7 +218,7 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
-        {filteredVehicles.map((vehicle) => {
+        {vehicleLocations.map((vehicle) => {
           const statusInfo = getStatusInfo(vehicle.status);
           const displayType = vehicle.vehicle_type;
 
@@ -227,33 +235,28 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
                 className="custom-tooltip"
               >
                 <div className="text-sm flex flex-col items-start bg-white p-3 min-w-[220px]">
-                  {/* Company Name */}
                   {vehicle.company_name && (
                     <p className="text-xs text-gray-500 mb-1 truncate w-full">
                       {vehicle.company_name}
                     </p>
                   )}
 
-                  {/* License Plate - Bold */}
                   <p className="font-bold text-base text-black mb-1">
                     {vehicle.license_plate}
                   </p>
 
-                  {/* Brand & Model */}
                   {vehicle.brand && vehicle.model && (
                     <p className="text-sm text-gray-700 mb-1">
                       {vehicle.brand} {vehicle.model}
                     </p>
                   )}
 
-                  {/* Vehicle Type */}
                   {displayType && (
                     <p className="text-xs text-blue-600 font-medium mb-2">
                       {formatVehicleType(displayType)}
                     </p>
                   )}
 
-                  {/* Status Badge */}
                   <div className="mb-2">
                     <span
                       className={`text-xs px-2 py-1 rounded-full font-medium ${statusInfo.bgColor} ${statusInfo.textColor}`}
@@ -262,12 +265,11 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
                     </span>
                   </div>
 
-                  {/* Meter Information */}
                   <div className="w-full border-t border-gray-200 pt-2">
                     {displayType === "EXCAVATOR" ||
-                      displayType === "BULLDOZER" ||
-                      displayType === "WHEEL_LOADER" ||
-                      displayType === "GRADER" ? (
+                    displayType === "BULLDOZER" ||
+                    displayType === "WHEEL_LOADER" ||
+                    displayType === "GRADER" ? (
                       <p className="text-xs text-gray-600">
                         ⏱️ Hourmeter:{" "}
                         <span className="font-semibold">
@@ -292,8 +294,7 @@ const VehicleMap: React.FC<VehicleMapProps> = ({ vehicleLocations }) => {
           );
         })}
 
-        {/* Automatically fit all markers in view */}
-        <FitBoundsToVehicles vehicles={filteredVehicles} />
+        <FitBoundsToVehicles vehicles={vehicleLocations} />
 
         <ZoomControl position="topright" />
       </MapContainer>
