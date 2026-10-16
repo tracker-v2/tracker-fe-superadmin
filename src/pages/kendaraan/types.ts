@@ -1,4 +1,5 @@
 // Form data types untuk kendaraan
+export type DtcProtocol = "J1939" | "OBD2";
 
 export interface KendaraanFormData {
   vehicleId?: number;
@@ -6,6 +7,7 @@ export interface KendaraanFormData {
   description: string;
   vehicleType?: string;
   odometer?: string;
+  hourmeter?: string;
   tankCapacity?: string;
   frameNumber: string;
   engineNumber: string;
@@ -22,6 +24,8 @@ export interface KendaraanFormData {
   image?: string;
   imei?: string;
   simNumber?: string;
+  hasObd?: boolean; // [OBD]
+  dtcProtocol?: DtcProtocol | null; // [OBD]
 }
 
 export interface ModelKendaraanFormData {

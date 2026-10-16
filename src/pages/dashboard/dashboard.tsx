@@ -15,12 +15,15 @@ import { getVehiclesApi } from "@/api/vehicle";
 
 const Dashboard = () => {
   const companyId = useAuthStore((s) => s.user?.companyId);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<
+    number | undefined
+  >(companyId);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [hiddenStatus, setHiddenStatus] = useState<string[]>([]);
 
   // Filter visible vehicles
   const visibleVehicles = vehicles.filter(
-    (v) => !hiddenStatus.includes(v.status)
+    (v) => !hiddenStatus.includes(v.status),
   );
 
   // Toggle visibility of vehicle status
@@ -28,18 +31,21 @@ const Dashboard = () => {
     setHiddenStatus((prev) =>
       prev.includes(status)
         ? prev.filter((s) => s !== status)
-        : [...prev, status]
+        : [...prev, status],
     );
   };
 
   useEffect(() => {
-    if (companyId) {
-      getVehiclesApi(companyId).then((data) => {
-        // console.log("Raw API data:", data); // Debug: cek data mentah dari API
+    if (!selectedCompanyId) return;
+
+    let ignore = false;
+    setVehicles([]);
+
+    getVehiclesApi(selectedCompanyId)
+      .then((data) => {
+        if (ignore) return;
 
         const mapped: Vehicle[] = data.map((item: VehicleApiResponse) => {
-          // console.log("Mapping item:", item); // Debug: cek setiap item
-
           // Handle case ketika logs_data null/kosong (websocket tidak ada data)
           const logsData = item.logs_data || {};
 
@@ -51,9 +57,9 @@ const Dashboard = () => {
             company_name: item.company_name,
             brand: item.brand,
             model: item.model,
-            vehicle_type: logsData.vehicle_type || item.vehicle_type || '',
-            odometer: logsData.odometer || item.odometer || 0, // ✅ Cek di logs_data atau root
-            hourmeter: logsData.hourmeter || item.hourmeter || 0, // ✅ Cek di logs_data atau root
+            vehicle_type: logsData.vehicle_type || item.vehicle_type || "",
+            odometer: logsData.odometer || item.odometer || 0,
+            hourmeter: logsData.hourmeter || item.hourmeter || 0,
             status:
               logsData.status === "OPERATING"
                 ? "active"
@@ -64,21 +70,27 @@ const Dashboard = () => {
         });
 
         // Deduplikasi: ambil item pertama untuk setiap ID unik
-        const uniqueVehicles = mapped.filter((v, index, self) =>
-          index === self.findIndex((vehicle) => vehicle.id === v.id)
+        const uniqueVehicles = mapped.filter(
+          (v, index, self) =>
+            index === self.findIndex((vehicle) => vehicle.id === v.id),
         );
 
-        // console.log("Mapped vehicles:", uniqueVehicles); // Debug: cek hasil mapping
         setVehicles(uniqueVehicles);
+      })
+      .catch(() => {
+        if (!ignore) setVehicles([]);
       });
-    }
-  }, [companyId]);
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedCompanyId]);
 
   // Count vehicles by status
   const activeVehicles = vehicles.filter((v) => v.status === "active").length;
   const idleVehicles = vehicles.filter((v) => v.status === "idle").length;
   const inactiveVehicles = vehicles.filter(
-    (v) => v.status === "inactive"
+    (v) => v.status === "inactive",
   ).length;
 
   return (
@@ -100,10 +112,11 @@ const Dashboard = () => {
             </div>
             <Button
               size="sm"
-              className={`flex-shrink-0 min-w-[110px] text-center ${hiddenStatus.includes("active")
-                ? "bg-white text-black hover:bg-green-50 border"
-                : "bg-green-600 hover:bg-green-700"
-                }`}
+              className={`flex-shrink-0 min-w-[110px] text-center ${
+                hiddenStatus.includes("active")
+                  ? "bg-white text-black hover:bg-green-50 border"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
               onClick={() => toggleVisibility("active")}
             >
               {hiddenStatus.includes("active") ? "Tampilkan" : "Sembunyikan"}
@@ -120,10 +133,11 @@ const Dashboard = () => {
             </div>
             <Button
               size="sm"
-              className={`flex-shrink-0 min-w-[110px] text-center ${hiddenStatus.includes("idle")
-                ? "bg-white text-black hover:bg-yellow-50 border"
-                : "bg-yellow-500 hover:bg-yellow-600"
-                }`}
+              className={`flex-shrink-0 min-w-[110px] text-center ${
+                hiddenStatus.includes("idle")
+                  ? "bg-white text-black hover:bg-yellow-50 border"
+                  : "bg-yellow-500 hover:bg-yellow-600"
+              }`}
               onClick={() => toggleVisibility("idle")}
             >
               {hiddenStatus.includes("idle") ? "Tampilkan" : "Sembunyikan"}
@@ -140,10 +154,11 @@ const Dashboard = () => {
             </div>
             <Button
               size="sm"
-              className={`flex-shrink-0 min-w-[110px] text-center ${hiddenStatus.includes("inactive")
-                ? "bg-white text-black hover:bg-red-50 border"
-                : "bg-red-600 hover:bg-red-700"
-                }`}
+              className={`flex-shrink-0 min-w-[110px] text-center ${
+                hiddenStatus.includes("inactive")
+                  ? "bg-white text-black hover:bg-red-50 border"
+                  : "bg-red-600 hover:bg-red-700"
+              }`}
               onClick={() => toggleVisibility("inactive")}
             >
               {hiddenStatus.includes("inactive") ? "Tampilkan" : "Sembunyikan"}
@@ -153,7 +168,11 @@ const Dashboard = () => {
       </div>
 
       <div className="w-full h-full rounded-md overflow-hidden relative z-0">
-        <VehicleMap vehicleLocations={visibleVehicles} />
+        <VehicleMap
+          vehicleLocations={visibleVehicles}
+          selectedCompanyId={selectedCompanyId}
+          onCompanyChange={setSelectedCompanyId}
+        />{" "}
       </div>
     </div>
   );
