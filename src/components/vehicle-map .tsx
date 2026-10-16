@@ -172,7 +172,6 @@ const VehicleMap: React.FC<VehicleMapProps> = ({
     const fetchCompanies = async () => {
       try {
         const companies: Company[] = await getCompaniesApi();
-        const companyNames = companies.map((company) => company.name);
         setCompanyList(
           companies.map((company) => ({ id: company.id, name: company.name })),
         );
