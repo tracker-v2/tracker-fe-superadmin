@@ -20,7 +20,7 @@ import { toggleRemoteStarter } from "@/api/remote-starter";
 import { assignFeatureToVehicle } from "@/api/vehicle-features";
 import { getCompaniesApi } from "@/api/companies";
 import { toast } from "sonner";
-import { KendaraanFormData } from "@/pages/kendaraan/types";
+import { KendaraanFormData, DtcProtocol } from "@/pages/kendaraan/types";
 import { updateHourmeter, updateOdometer } from "@/api/vehicle";
 
 interface DialogKendaraanTambahProps {
@@ -46,6 +46,12 @@ interface Company {
   [key: string]: unknown;
 }
 
+// [OBD] Opsi protokol DTC (sesuai enum DtcProtocol di Prisma)
+const DTC_PROTOCOL_OPTIONS: { value: DtcProtocol; label: string }[] = [
+  { value: "J1939", label: "J1939" },
+  { value: "OBD2", label: "OBD2" },
+];
+
 const initialFormData: KendaraanFormData = {
   licensePlate: "",
   description: "",
@@ -60,6 +66,8 @@ const initialFormData: KendaraanFormData = {
   hasOnOff: false,
   fuelCalibration: "",
   onOffProcess: "PROCESS_ON",
+  hasObd: false, // [OBD]
+  dtcProtocol: null, // [OBD] tidak ada default
 };
 
 const HOURMETER_ONLY = [
@@ -137,7 +145,7 @@ export function DialogKendaraanTambah({
   };
 
   const handleCheckboxChange = (
-    name: "hasFuel" | "hasOnOff",
+    name: "hasFuel" | "hasOnOff" | "hasObd", // [OBD]
     checked: boolean,
   ) => {
     setFormData((prev) => {
@@ -149,6 +157,10 @@ export function DialogKendaraanTambah({
       // Reset onOffProcess to default when On/Off is unchecked
       if (name === "hasOnOff" && !checked) {
         updates.onOffProcess = "PROCESS_ON";
+      }
+      // [OBD] Reset protokol ke null saat OBD di-uncheck
+      if (name === "hasObd" && !checked) {
+        updates.dtcProtocol = null;
       }
       return { ...prev, ...updates };
     });
@@ -231,6 +243,16 @@ export function DialogKendaraanTambah({
           } catch (fuelFeatureError) {
             console.error("Failed to assign Fuel feature:", fuelFeatureError);
             toast.warning("Gagal mengassign fitur Fuel ke kendaraan");
+          }
+        }
+
+        if (formData.hasObd) {
+          try {
+            await assignFeatureToVehicle(vehicleId, 3); // Feature ID 3 = OBD
+            toast.success("Fitur OBD berhasil diassign");
+          } catch (obdFeatureError) {
+            console.error("Failed to assign OBD feature:", obdFeatureError);
+            toast.warning("Gagal mengassign fitur OBD ke kendaraan");
           }
         }
       }
@@ -691,6 +713,58 @@ export function DialogKendaraanTambah({
                     <SelectContent>
                       <SelectItem value="PROCESS_ON">UPDATED ON</SelectItem>
                       <SelectItem value="PROCESS_OFF">UPDATED OFF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* [OBD] Row 3: OBD Checkbox & Protokol DTC Select */}
+              <div className="grid grid-cols-2 gap-8 items-end">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hasObd"
+                      checked={formData.hasObd ?? false}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange("hasObd", checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="hasObd"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      OBD
+                    </Label>
+                  </div>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="dtcProtocol"
+                    className={`text-sm font-medium block mb-1 ${
+                      formData.hasObd ? "text-gray-700" : "text-gray-400"
+                    }`}
+                  >
+                    Protokol DTC
+                  </Label>
+                  <Select
+                    value={formData.dtcProtocol ?? ""}
+                    onValueChange={(value) =>
+                      handleSelectChange("dtcProtocol", value)
+                    }
+                    disabled={!formData.hasObd}
+                  >
+                    <SelectTrigger
+                      id="dtcProtocol"
+                      className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <SelectValue placeholder="Pilih protokol DTC" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DTC_PROTOCOL_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

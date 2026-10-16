@@ -24,9 +24,9 @@ interface LaporanTableProps {
   filteredData: ReportItem[];
   showTable: boolean;
   lokasiMap?: Record<number, string>;
-  startDate: string; // tambahkan
-  endDate: string; // tambahkan
-  vehicleIds: number[]; // tambahkan
+  startDate: string;
+  endDate: string; 
+  vehicleIds: number[]; 
 }
 
 function formatDate(dateValue: Date | string | undefined, dateFormat: string) {
