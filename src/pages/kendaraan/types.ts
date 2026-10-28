@@ -26,6 +26,7 @@ export interface KendaraanFormData {
   simNumber?: string;
   hasObd?: boolean; // [OBD]
   dtcProtocol?: DtcProtocol | null; // [OBD]
+  customerId?: number | null;
 }
 
 export interface ModelKendaraanFormData {
@@ -42,6 +43,8 @@ export interface Vehicle {
   id: number;
   companyId: number;
   licensePlate: string;
+  customerId?: number | null;
+  customerName?: string | null;
   description: string | null;
   image: string;
   vehicleType: string;

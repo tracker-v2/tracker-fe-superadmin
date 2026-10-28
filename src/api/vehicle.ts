@@ -3,7 +3,6 @@ import axios from "@/lib/axios";
 import useSWR from "swr";
 import { DtcProtocol } from "@/pages/kendaraan/types";
 
-
 export const getVehiclesApi = async (companyId: number) => {
   const res = await axios.get(`/vehicles/list/${companyId}`);
   // console.log("hi",res.data.data)
@@ -182,6 +181,7 @@ export const addVehicleSuperAdmin = async (vehicleData: {
   engineNumber: string;
   marking_number: string;
   description?: string;
+  customerId?: number | null;
   dtcProtocol?: DtcProtocol | null; // [OBD]
 }) => {
   const res = await axios.post(`vehicles/superadmin`, vehicleData);
