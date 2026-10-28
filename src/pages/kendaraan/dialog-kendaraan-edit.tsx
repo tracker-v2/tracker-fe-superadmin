@@ -17,6 +17,7 @@ import {
   postFuelCalibration,
 } from "@/api/vehicle";
 import { toggleRemoteStarter } from "@/api/remote-starter";
+import { assignFeatureToVehicle } from "@/api/vehicle-features";
 import {
   Select,
   SelectContent,
@@ -26,9 +27,14 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import {
+  KendaraanFormData,
+  Vehicle,
+  DtcProtocol,
+} from "@/pages/kendaraan/types";
 import { toast } from "sonner";
 import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
+import { CustomerSelect } from "@/pages/kendaraan/customer-select";
 
 interface DialogKendaraanEditProps {
   open: boolean;
@@ -37,6 +43,11 @@ interface DialogKendaraanEditProps {
   vehicle?: Vehicle | null;
   companyId?: number;
 }
+
+const DTC_PROTOCOL_OPTIONS: { value: DtcProtocol; label: string }[] = [
+  { value: "J1939", label: "J1939" },
+  { value: "OBD2", label: "OBD2" },
+];
 
 const initialFormData: KendaraanFormData = {
   licensePlate: "",
@@ -56,6 +67,9 @@ const initialFormData: KendaraanFormData = {
   fuelCalibration: "",
   imei: "",
   simNumber: "",
+  customerId: null,
+  hasObd: false,
+  dtcProtocol: null,
 };
 
 export function DialogKendaraanEdit({
@@ -70,6 +84,7 @@ export function DialogKendaraanEdit({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
   const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
+  const [hadObd, setHadObd] = useState(false);
 
   const fetchVehicleData = useCallback(
     async (vehicleId: number, compId: number) => {
@@ -119,6 +134,9 @@ export function DialogKendaraanEdit({
           // dedicated GET endpoint when available from the backend.
           // For now, hasOnOff defaults to false on load.
           const hasOnOffStatus = false;
+          const hasObdFeature =
+            Array.isArray(vehicle.featureIds) && vehicle.featureIds.includes(3);
+          setHadObd(hasObdFeature);
 
           setFormData({
             vehicleId: vehicleId,
@@ -139,6 +157,9 @@ export function DialogKendaraanEdit({
             fuelCalibration: fuelCalibrationStr,
             imei: imei,
             simNumber: simNumber,
+            customerId: vehicle.customerId ?? null,
+            hasObd: hasObdFeature,
+            dtcProtocol: null,
           });
         } else {
           console.log("No vehicle data found");
@@ -186,7 +207,7 @@ export function DialogKendaraanEdit({
   };
 
   const handleCheckboxChange = (
-    name: "hasFuel" | "hasOnOff",
+    name: "hasFuel" | "hasOnOff" | "hasObd",
     checked: boolean,
   ) => {
     setFormData((prev) => {
@@ -194,6 +215,10 @@ export function DialogKendaraanEdit({
       // Auto-clear fuelCalibration when Fuel is unchecked
       if (name === "hasFuel" && !checked) {
         updates.fuelCalibration = "";
+      }
+      // Reset protokol ke null saat OBD di-uncheck
+      if (name === "hasObd" && !checked) {
+        updates.dtcProtocol = null;
       }
       return { ...prev, ...updates };
     });
@@ -224,6 +249,7 @@ export function DialogKendaraanEdit({
         brand: formData.brand,
         model: formData.model,
         markingNumber: formData.markingNumber,
+        customerId: formData.customerId ?? null,
       };
 
       // Step 1: Update main vehicle data
@@ -253,6 +279,17 @@ export function DialogKendaraanEdit({
           toast.warning(
             "Kendaraan berhasil diperbarui, namun gagal mengatur fitur Fuel",
           );
+        }
+      }
+
+      if (formData.hasObd && !hadObd) {
+        try {
+          await assignFeatureToVehicle(vehicle.id, 3); // Feature ID 3 = OBD
+          setHadObd(true);
+          toast.success("Fitur OBD berhasil diassign");
+        } catch (obdFeatureError) {
+          console.error("Failed to assign OBD feature:", obdFeatureError);
+          toast.warning("Gagal mengassign fitur OBD ke kendaraan");
         }
       }
 
@@ -390,6 +427,19 @@ export function DialogKendaraanEdit({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Customer</Label>
+            <div className="mt-1">
+              <CustomerSelect
+                companyId={companyId}
+                value={formData.customerId}
+                onChange={(id) =>
+                  setFormData((prev) => ({ ...prev, customerId: id }))
+                }
+              />
             </div>
           </div>
 
@@ -621,6 +671,59 @@ export function DialogKendaraanEdit({
                   disabled={!formData.hasFuel}
                   className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+              </div>
+            </div>
+
+            {/* [OBD] OBD Checkbox & Protokol DTC Select */}
+            <div className="grid grid-cols-2 gap-8 items-end mt-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hasObd"
+                    checked={formData.hasObd ?? false}
+                    disabled={hadObd}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange("hasObd", checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="hasObd"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    OBD
+                  </Label>
+                </div>
+              </div>
+              <div>
+                <Label
+                  htmlFor="dtcProtocol"
+                  className={`text-sm font-medium block mb-1 ${
+                    formData.hasObd ? "text-gray-700" : "text-gray-400"
+                  }`}
+                >
+                  Protokol DTC
+                </Label>
+                <Select
+                  value={formData.dtcProtocol ?? ""}
+                  onValueChange={(value) =>
+                    handleSelectChange("dtcProtocol", value)
+                  }
+                  disabled={!formData.hasObd}
+                >
+                  <SelectTrigger
+                    id="dtcProtocol"
+                    className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <SelectValue placeholder="Pilih protokol DTC" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DTC_PROTOCOL_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

@@ -22,6 +22,7 @@ import { getCompaniesApi } from "@/api/companies";
 import { toast } from "sonner";
 import { KendaraanFormData, DtcProtocol } from "@/pages/kendaraan/types";
 import { updateHourmeter, updateOdometer } from "@/api/vehicle";
+import { CustomerSelect } from "@/pages/kendaraan/customer-select";
 
 interface DialogKendaraanTambahProps {
   open: boolean;
@@ -68,6 +69,7 @@ const initialFormData: KendaraanFormData = {
   onOffProcess: "PROCESS_ON",
   hasObd: false, // [OBD]
   dtcProtocol: null, // [OBD] tidak ada default
+  customerId: null,
 };
 
 const HOURMETER_ONLY = [
@@ -205,6 +207,7 @@ export function DialogKendaraanTambah({
         vehicleModelId: formData.vehicleModelId,
         companyId: companyId,
         licensePlate: formData.licensePlate,
+        customerId: formData.customerId ?? null,
         image: formData.image || "-",
         color: formData.color,
         year: formData.year,
@@ -463,6 +466,19 @@ export function DialogKendaraanTambah({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Customer</Label>
+            <div className="mt-1">
+              <CustomerSelect
+                companyId={companyId}
+                value={formData.customerId}
+                onChange={(id) =>
+                  setFormData((prev) => ({ ...prev, customerId: id }))
+                }
+              />
             </div>
           </div>
 
