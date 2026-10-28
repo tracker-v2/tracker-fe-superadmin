@@ -31,16 +31,17 @@ export interface RemoteStarterAvailabilityResponse {
 export const toggleRemoteStarter = async (
   vehicleId: string | number,
   codeConfirm: string,
-  action: "PROCESS_ON" | "PROCESS_OFF"
+  action: "PROCESS_ON" | "PROCESS_OFF",
 ): Promise<RemoteStarterToggleResponse> => {
   const payload: RemoteStarterToggleRequest = {
     code_confirm: codeConfirm,
     action,
   };
-  return axios.post(
-    `/api/v1/vehicles/${vehicleId}/remote-starter/toggle`,
-    payload
+  const res = await axios.post(
+    `/vehicles/${vehicleId}/remote-starter/toggle`,
+    payload,
   );
+  return res.data;
 };
 
 /**
@@ -48,12 +49,10 @@ export const toggleRemoteStarter = async (
  * @param vehicleId - The vehicle ID
  */
 export const checkRemoteStarterAvailability = async (
-  vehicleId: string | number
+  vehicleId: string | number,
 ): Promise<RemoteStarterAvailabilityResponse> => {
   const res = await axios.get(
-    `/api/v1/vehicles/${vehicleId}/remote-starter/check`
+    `/api/v1/vehicles/${vehicleId}/remote-starter/check`,
   );
   return res.data.data;
 };
-
-

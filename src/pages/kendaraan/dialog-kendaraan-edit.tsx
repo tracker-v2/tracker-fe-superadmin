@@ -1,12 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getVehicleDetail, editVehicleSuperAdmin, getFuelCalibration, postFuelCalibration } from "@/api/vehicle";
+import {
+  getVehicleDetail,
+  editVehicleSuperAdmin,
+  getFuelCalibration,
+  postFuelCalibration,
+} from "@/api/vehicle";
 import { toggleRemoteStarter } from "@/api/remote-starter";
+import { assignFeatureToVehicle } from "@/api/vehicle-features";
 import {
   Select,
   SelectContent,
@@ -16,9 +27,14 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { KendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import {
+  KendaraanFormData,
+  Vehicle,
+  DtcProtocol,
+} from "@/pages/kendaraan/types";
 import { toast } from "sonner";
 import { ConfirmCodeDialog } from "@/components/confirm-code-dialog";
+import { CustomerSelect } from "@/pages/kendaraan/customer-select";
 
 interface DialogKendaraanEditProps {
   open: boolean;
@@ -27,6 +43,11 @@ interface DialogKendaraanEditProps {
   vehicle?: Vehicle | null;
   companyId?: number;
 }
+
+const DTC_PROTOCOL_OPTIONS: { value: DtcProtocol; label: string }[] = [
+  { value: "J1939", label: "J1939" },
+  { value: "OBD2", label: "OBD2" },
+];
 
 const initialFormData: KendaraanFormData = {
   licensePlate: "",
@@ -46,6 +67,9 @@ const initialFormData: KendaraanFormData = {
   fuelCalibration: "",
   imei: "",
   simNumber: "",
+  customerId: null,
+  hasObd: false,
+  dtcProtocol: null,
 };
 
 export function DialogKendaraanEdit({
@@ -60,77 +84,96 @@ export function DialogKendaraanEdit({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmCodeOpen, setConfirmCodeOpen] = useState(false);
   const [pendingVehicleId, setPendingVehicleId] = useState<number | null>(null);
+  const [hadObd, setHadObd] = useState(false);
 
-  const fetchVehicleData = useCallback(async (vehicleId: number, compId: number) => {
-    if (!vehicleId || !compId) {
-      console.log("No vehicleId or companyId provided");
-      return;
-    }
-
-    setLoadingVehicle(true);
-    console.log("Fetching vehicle data for vehicleId:", vehicleId, "companyId:", compId);
-
-    try {
-      // Fetch vehicle detail and fuel calibration in parallel
-      const [vehicleData, fuelCalibrationData] = await Promise.allSettled([
-        getVehicleDetail(vehicleId, compId),
-        getFuelCalibration(vehicleId),
-      ]);
-
-      const vehicle = vehicleData.status === "fulfilled" ? vehicleData.value : null;
-      const fuelCalib = fuelCalibrationData.status === "fulfilled" ? fuelCalibrationData.value : null;
-
-      console.log("Vehicle data received:", vehicle);
-      console.log("Fuel calibration data:", fuelCalib);
-
-      if (vehicle) {
-        // Extract device info dari vehicleData
-        const imei = vehicle.imei || "";
-        const simNumber = vehicle.simNumber || "";
-
-        // Parse fuel calibration coefficients array back into a string for the input
-        const hasFuelData = Array.isArray(fuelCalib) && fuelCalib.length > 0;
-        const fuelCalibrationStr = hasFuelData
-          ? (fuelCalib as number[]).join(", ")
-          : "";
-
-        // NOTE: Remote Starter (On/Off) active status is not yet exposed via the main
-        // vehicle detail endpoint. Map it from vehicleData.hasRemoteStarter or a
-        // dedicated GET endpoint when available from the backend.
-        // For now, hasOnOff defaults to false on load.
-        const hasOnOffStatus = false;
-
-        setFormData({
-          vehicleId: vehicleId,
-          licensePlate: vehicle.licensePlate || "",
-          description: vehicle.description || "",
-          vehicleType: vehicle.vehicleType || "",
-          odometer: vehicle.lastOdometer?.toString() || "",
-          tankCapacity: vehicle.fuelTank?.toString() || "",
-          frameNumber: vehicle.frameNumber || "",
-          engineNumber: vehicle.engineNumber || "",
-          color: vehicle.color || "",
-          year: vehicle.year || 0,
-          brand: vehicle.brand || "",
-          model: vehicle.model || "",
-          markingNumber: vehicle.markingNumber || "",
-          hasFuel: hasFuelData,
-          hasOnOff: hasOnOffStatus,
-          fuelCalibration: fuelCalibrationStr,
-          imei: imei,
-          simNumber: simNumber,
-        });
-      } else {
-        console.log("No vehicle data found");
-        setFormData(initialFormData);
+  const fetchVehicleData = useCallback(
+    async (vehicleId: number, compId: number) => {
+      if (!vehicleId || !compId) {
+        console.log("No vehicleId or companyId provided");
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching vehicle:", error);
-      setFormData(initialFormData);
-    } finally {
-      setLoadingVehicle(false);
-    }
-  }, []);
+
+      setLoadingVehicle(true);
+      console.log(
+        "Fetching vehicle data for vehicleId:",
+        vehicleId,
+        "companyId:",
+        compId,
+      );
+
+      try {
+        // Fetch vehicle detail and fuel calibration in parallel
+        const [vehicleData, fuelCalibrationData] = await Promise.allSettled([
+          getVehicleDetail(vehicleId, compId),
+          getFuelCalibration(vehicleId),
+        ]);
+
+        const vehicle =
+          vehicleData.status === "fulfilled" ? vehicleData.value : null;
+        const fuelCalib =
+          fuelCalibrationData.status === "fulfilled"
+            ? fuelCalibrationData.value
+            : null;
+
+        console.log("Vehicle data received:", vehicle);
+        console.log("Fuel calibration data:", fuelCalib);
+
+        if (vehicle) {
+          // Extract device info dari vehicleData
+          const imei = vehicle.imei || "";
+          const simNumber = vehicle.simNumber || "";
+
+          // Parse fuel calibration coefficients array back into a string for the input
+          const hasFuelData = Array.isArray(fuelCalib) && fuelCalib.length > 0;
+          const fuelCalibrationStr = hasFuelData
+            ? (fuelCalib as number[]).join(", ")
+            : "";
+
+          // NOTE: Remote Starter (On/Off) active status is not yet exposed via the main
+          // vehicle detail endpoint. Map it from vehicleData.hasRemoteStarter or a
+          // dedicated GET endpoint when available from the backend.
+          // For now, hasOnOff defaults to false on load.
+          const hasOnOffStatus = false;
+          const hasObdFeature =
+            Array.isArray(vehicle.featureIds) && vehicle.featureIds.includes(3);
+          setHadObd(hasObdFeature);
+
+          setFormData({
+            vehicleId: vehicleId,
+            licensePlate: vehicle.licensePlate || "",
+            description: vehicle.description || "",
+            vehicleType: vehicle.vehicleType || "",
+            odometer: vehicle.lastOdometer?.toString() || "",
+            tankCapacity: vehicle.fuelTank?.toString() || "",
+            frameNumber: vehicle.frameNumber || "",
+            engineNumber: vehicle.engineNumber || "",
+            color: vehicle.color || "",
+            year: vehicle.year || 0,
+            brand: vehicle.brand || "",
+            model: vehicle.model || "",
+            markingNumber: vehicle.markingNumber || "",
+            hasFuel: hasFuelData,
+            hasOnOff: hasOnOffStatus,
+            fuelCalibration: fuelCalibrationStr,
+            imei: imei,
+            simNumber: simNumber,
+            customerId: vehicle.customerId ?? null,
+            hasObd: hasObdFeature,
+            dtcProtocol: null,
+          });
+        } else {
+          console.log("No vehicle data found");
+          setFormData(initialFormData);
+        }
+      } catch (error) {
+        console.error("Error fetching vehicle:", error);
+        setFormData(initialFormData);
+      } finally {
+        setLoadingVehicle(false);
+      }
+    },
+    [],
+  );
 
   // Load initial data and nge fetch vehicle detail ketika dialog open
   useEffect(() => {
@@ -146,7 +189,9 @@ export function DialogKendaraanEdit({
     }
   }, [open, vehicle, companyId, fetchVehicleData]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -161,12 +206,19 @@ export function DialogKendaraanEdit({
     }));
   };
 
-  const handleCheckboxChange = (name: "hasFuel" | "hasOnOff", checked: boolean) => {
+  const handleCheckboxChange = (
+    name: "hasFuel" | "hasOnOff" | "hasObd",
+    checked: boolean,
+  ) => {
     setFormData((prev) => {
       const updates: Partial<KendaraanFormData> = { [name]: checked };
       // Auto-clear fuelCalibration when Fuel is unchecked
       if (name === "hasFuel" && !checked) {
         updates.fuelCalibration = "";
+      }
+      // Reset protokol ke null saat OBD di-uncheck
+      if (name === "hasObd" && !checked) {
+        updates.dtcProtocol = null;
       }
       return { ...prev, ...updates };
     });
@@ -197,13 +249,14 @@ export function DialogKendaraanEdit({
         brand: formData.brand,
         model: formData.model,
         markingNumber: formData.markingNumber,
+        customerId: formData.customerId ?? null,
       };
 
       // Step 1: Update main vehicle data
       await editVehicleSuperAdmin(
         vehicle.id,
         Number(companyId),
-        vehiclePayload
+        vehiclePayload,
       );
 
       toast.success("Data kendaraan berhasil diperbarui", { id: toastId });
@@ -223,7 +276,20 @@ export function DialogKendaraanEdit({
           }
         } catch (fuelError) {
           console.error("Failed to update fuel calibration:", fuelError);
-          toast.warning("Kendaraan berhasil diperbarui, namun gagal mengatur fitur Fuel");
+          toast.warning(
+            "Kendaraan berhasil diperbarui, namun gagal mengatur fitur Fuel",
+          );
+        }
+      }
+
+      if (formData.hasObd && !hadObd) {
+        try {
+          await assignFeatureToVehicle(vehicle.id, 3); // Feature ID 3 = OBD
+          setHadObd(true);
+          toast.success("Fitur OBD berhasil diassign");
+        } catch (obdFeatureError) {
+          console.error("Failed to assign OBD feature:", obdFeatureError);
+          toast.warning("Gagal mengassign fitur OBD ke kendaraan");
         }
       }
 
@@ -244,10 +310,11 @@ export function DialogKendaraanEdit({
       let errorMessage = "Gagal mengupdate kendaraan. Silakan coba lagi.";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      } else if (typeof error === "object" && error !== null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const axiosError = error as Record<string, any>;
-        errorMessage = axiosError?.response?.data?.message ||
+        errorMessage =
+          axiosError?.response?.data?.message ||
           axiosError?.response?.data?.error ||
           errorMessage;
       }
@@ -280,7 +347,9 @@ export function DialogKendaraanEdit({
       onSuccess?.();
     } catch (starterError) {
       console.error("Failed to enable remote starter:", starterError);
-      toast.error("Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.");
+      toast.error(
+        "Gagal mengaktifkan fitur On/Off. Kode konfirmasi mungkin salah.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -336,13 +405,17 @@ export function DialogKendaraanEdit({
                 </Label>
                 <Select
                   value={formData.vehicleType}
-                  onValueChange={(value) => handleSelectChange("vehicleType", value)}
+                  onValueChange={(value) =>
+                    handleSelectChange("vehicleType", value)
+                  }
                 >
                   <SelectTrigger className="mt-1 text-sm font-semibold bg-white">
                     <SelectValue placeholder="Pilih tipe kendaraan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MOBIL_PENUMPANG">Mobil Penumpang</SelectItem>
+                    <SelectItem value="MOBIL_PENUMPANG">
+                      Mobil Penumpang
+                    </SelectItem>
                     <SelectItem value="MOBIL_BEBAN">Mobil Beban</SelectItem>
                     <SelectItem value="PICKUP_TRUCK">Pickup Truck</SelectItem>
                     <SelectItem value="DUMP_TRUCK">Dump Truck</SelectItem>
@@ -354,6 +427,19 @@ export function DialogKendaraanEdit({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Customer</Label>
+            <div className="mt-1">
+              <CustomerSelect
+                companyId={companyId}
+                value={formData.customerId}
+                onChange={(id) =>
+                  setFormData((prev) => ({ ...prev, customerId: id }))
+                }
+              />
             </div>
           </div>
 
@@ -486,7 +572,10 @@ export function DialogKendaraanEdit({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="imei" className="text-xs font-medium text-gray-600">
+                <Label
+                  htmlFor="imei"
+                  className="text-xs font-medium text-gray-600"
+                >
                   IMEI
                 </Label>
                 <Input
@@ -498,12 +587,17 @@ export function DialogKendaraanEdit({
               </div>
 
               <div>
-                <Label htmlFor="simNumber" className="text-xs font-medium text-gray-600">
+                <Label
+                  htmlFor="simNumber"
+                  className="text-xs font-medium text-gray-600"
+                >
                   No Simcard
                 </Label>
                 <Input
                   id="simNumber"
-                  value={formData.simNumber || (loadingVehicle ? "Loading..." : "")}
+                  value={
+                    formData.simNumber || (loadingVehicle ? "Loading..." : "")
+                  }
                   readOnly
                   className="mt-1 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
@@ -532,7 +626,10 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasFuel", checked === true)
                       }
                     />
-                    <Label htmlFor="hasFuel" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasFuel"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       Fuel
                     </Label>
                   </div>
@@ -545,7 +642,10 @@ export function DialogKendaraanEdit({
                         handleCheckboxChange("hasOnOff", checked === true)
                       }
                     />
-                    <Label htmlFor="hasOnOff" className="text-sm font-medium cursor-pointer">
+                    <Label
+                      htmlFor="hasOnOff"
+                      className="text-sm font-medium cursor-pointer"
+                    >
                       On/Off
                     </Label>
                   </div>
@@ -556,8 +656,9 @@ export function DialogKendaraanEdit({
               <div>
                 <Label
                   htmlFor="fuelCalibration"
-                  className={`text-sm font-medium block mb-1 ${formData.hasFuel ? "text-gray-700" : "text-gray-400"
-                    }`}
+                  className={`text-sm font-medium block mb-1 ${
+                    formData.hasFuel ? "text-gray-700" : "text-gray-400"
+                  }`}
                 >
                   Kalibrasi Fuel
                 </Label>
@@ -570,6 +671,59 @@ export function DialogKendaraanEdit({
                   disabled={!formData.hasFuel}
                   className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+              </div>
+            </div>
+
+            {/* [OBD] OBD Checkbox & Protokol DTC Select */}
+            <div className="grid grid-cols-2 gap-8 items-end mt-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hasObd"
+                    checked={formData.hasObd ?? false}
+                    disabled={hadObd}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange("hasObd", checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="hasObd"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    OBD
+                  </Label>
+                </div>
+              </div>
+              <div>
+                <Label
+                  htmlFor="dtcProtocol"
+                  className={`text-sm font-medium block mb-1 ${
+                    formData.hasObd ? "text-gray-700" : "text-gray-400"
+                  }`}
+                >
+                  Protokol DTC
+                </Label>
+                <Select
+                  value={formData.dtcProtocol ?? ""}
+                  onValueChange={(value) =>
+                    handleSelectChange("dtcProtocol", value)
+                  }
+                  disabled={!formData.hasObd}
+                >
+                  <SelectTrigger
+                    id="dtcProtocol"
+                    className="text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <SelectValue placeholder="Pilih protokol DTC" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DTC_PROTOCOL_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
