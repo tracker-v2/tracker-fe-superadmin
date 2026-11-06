@@ -18,6 +18,7 @@ import {
 import { ListModelKendaraan } from "@/pages/kendaraan/list-model-kendaraan";
 import { toast } from "sonner";
 import { ModelKendaraanFormData, Vehicle } from "@/pages/kendaraan/types";
+import DialogSummaryAktif from "@/pages/kendaraan/dialog-summary-aktif";
 
 // Filter options untuk vehicle types
 const filterOptions = [
@@ -232,6 +233,7 @@ export function ListKendaraanPage() {
           >
             List Marking Number
           </button>
+          <DialogSummaryAktif companyId={Number(companyId)} />
         </div>
         <button
           onClick={() => {

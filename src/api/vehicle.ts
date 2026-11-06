@@ -122,6 +122,32 @@ export const deleteVehicleById = async (vehicleId: number) => {
   return res.data;
 };
 
+export interface ActiveVehicleSummary {
+  totalVehicles: number;
+  active7Days: number;
+  active30Days: number;
+}
+
+export const getActiveVehicleSummary = async (
+  companyId: number,
+): Promise<ActiveVehicleSummary> => {
+  const res = await axios.get(`vehicles/summary/active/${companyId}`);
+  return res.data.data;
+};
+
+export interface ActiveVehicleItem {
+  id: number;
+  licensePlate: string;
+  lastDataAt: string | null;
+}
+
+export interface ActiveVehicleSummary {
+  totalVehicles: number;
+  active7Days: number;
+  active30Days: number;
+  vehicles: ActiveVehicleItem[];
+}
+
 // Edit Vehicle Super Admin
 export const editVehicleSuperAdmin = async (
   vehicleId: number,
