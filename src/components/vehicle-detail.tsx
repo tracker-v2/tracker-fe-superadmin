@@ -28,7 +28,7 @@ const normalizeStatus = (status: string): "on" | "off" | "idle" | "default" => {
 // Helper to get icon path
 const getVehicleIconPath = (
   vehicleType: string | undefined,
-  status: string
+  status: string,
 ): string => {
   const finalVehicleType = vehicleType;
 
@@ -64,17 +64,22 @@ export const VehicleDetail = () => {
   const vehicleId = vehicle?.id ?? null;
   const clearRoute = useVehicleStore((s) => s.clearRoute);
 
-  const [totalMachineActiveTime, setTotalMachineActiveTime] = useState<number | null>(null);
+  const [totalMachineActiveTime, setTotalMachineActiveTime] = useState<
+    number | null
+  >(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"PROCESS_ON" | "PROCESS_OFF" | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    "PROCESS_ON" | "PROCESS_OFF" | null
+  >(null);
 
   const { trackingData, isLoading } = useVehicleLiveTracking(vehicleId);
   const { vehicleDetail } = useVehicleDetail(vehicleId);
 
   // Fetch remote starter status with SWR
-  const { data: remoteStarterData, mutate: mutateRemoteStarter } = useVehicleRemoteStarter(vehicleId);
+  const { data: remoteStarterData, mutate: mutateRemoteStarter } =
+    useVehicleRemoteStarter(vehicleId);
 
   const telemetry = trackingData?.telemetry;
   const lat = telemetry?.latitude ? parseFloat(telemetry.latitude) : null;
@@ -82,12 +87,27 @@ export const VehicleDetail = () => {
   const address = useReverseGeocode(lat, lng);
 
   // Compute display values for meters and speed (prioritize telemetry fields, with fallbacks)
-  const telemetryOdometer = telemetry?.odometer !== undefined && telemetry?.odometer !== null ? Number(telemetry.odometer) : undefined;
-  const telemetryOperatingTime = telemetry?.operating_time !== undefined && telemetry?.operating_time !== null ? Number(telemetry.operating_time) : undefined;
-  const telemetryHourmeterRaw = telemetry?.hourmeter !== undefined && telemetry?.hourmeter !== null ? Number(telemetry.hourmeter) : undefined;
-  const displayHourmeterValue = telemetryHourmeterRaw ?? (telemetryOperatingTime ? telemetryOperatingTime / 3600 : undefined);
+  const telemetryOdometer =
+    telemetry?.odometer !== undefined && telemetry?.odometer !== null
+      ? Number(telemetry.odometer)
+      : undefined;
+  const telemetryOperatingTime =
+    telemetry?.operating_time !== undefined &&
+    telemetry?.operating_time !== null
+      ? Number(telemetry.operating_time)
+      : undefined;
+  const telemetryHourmeterRaw =
+    telemetry?.hourmeter !== undefined && telemetry?.hourmeter !== null
+      ? Number(telemetry.hourmeter)
+      : undefined;
+  const displayHourmeterValue =
+    telemetryHourmeterRaw ??
+    (telemetryOperatingTime ? telemetryOperatingTime / 3600 : undefined);
   const displayOdometerValue = telemetryOdometer;
-  const telemetrySpeed = telemetry?.speed !== undefined && telemetry?.speed !== null ? Number(telemetry.speed) : undefined;
+  const telemetrySpeed =
+    telemetry?.speed !== undefined && telemetry?.speed !== null
+      ? Number(telemetry.speed)
+      : undefined;
   const displaySpeedValue = telemetrySpeed ?? 0;
 
   const activeTab = useVehicleStore((s) => s.activeTab);
@@ -102,7 +122,7 @@ export const VehicleDetail = () => {
 
   const vehicleIconPath = getVehicleIconPath(
     finalVehicleType,
-    telemetry?.status || "IDLE"
+    telemetry?.status || "IDLE",
   );
 
   // Helper function untuk styling button berdasarkan status
@@ -130,28 +150,7 @@ export const VehicleDetail = () => {
           statusBg: "bg-red-50 border-red-500 text-red-600",
           isProcessing: false,
         };
-      case "PROCESS_ON":
-        return {
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-400",
-          textColor: "text-gray-600",
-          icon: Loader2,
-          label: "Memproses Menghidupkan...",
-          statusLabel: "Processing On",
-          statusBg: "bg-gray-50 border-gray-400 text-gray-600",
-          isProcessing: true,
-        };
-      case "PROCESS_OFF":
-        return {
-          bgColor: "bg-gray-50",
-          borderColor: "border-gray-400",
-          textColor: "text-gray-600",
-          icon: Loader2,
-          label: "Memproses Mematikan...",
-          statusLabel: "Processing Off",
-          statusBg: "bg-gray-50 border-gray-400 text-gray-600",
-          isProcessing: true,
-        };
+
       default:
         return {
           bgColor: "bg-gray-50",
@@ -185,25 +184,40 @@ export const VehicleDetail = () => {
 
   useEffect(() => {
     if (vehicleId && telemetry && lat !== null && lng !== null) {
-      const newStatus = telemetry.status === "OPERATING" ? "active" : telemetry.status === "STOPPED" ? "inactive" : "idle";
+      const newStatus =
+        telemetry.status === "OPERATING"
+          ? "active"
+          : telemetry.status === "STOPPED"
+            ? "inactive"
+            : "idle";
 
       // Parse odometer/hourmeter/speed to numbers when possible
-      const parsedOdometer = telemetry.odometer !== undefined && telemetry.odometer !== null ? Number(telemetry.odometer) : undefined;
-      const parsedHourmeterRaw = telemetry.hourmeter !== undefined && telemetry.hourmeter !== null ? Number(telemetry.hourmeter) : undefined;
+      const parsedOdometer =
+        telemetry.odometer !== undefined && telemetry.odometer !== null
+          ? Number(telemetry.odometer)
+          : undefined;
+      const parsedHourmeterRaw =
+        telemetry.hourmeter !== undefined && telemetry.hourmeter !== null
+          ? Number(telemetry.hourmeter)
+          : undefined;
 
       // Jika hourmeter tidak tersedia, fallback ke operating_time (dikonversi ke jam)
-      const parsedOperatingTime = telemetry.operating_time !== undefined && telemetry.operating_time !== null ? Number(telemetry.operating_time) : undefined;
-      const parsedHourmeter = parsedHourmeterRaw ?? (parsedOperatingTime ? parsedOperatingTime / 3600 : undefined);
+      const parsedOperatingTime =
+        telemetry.operating_time !== undefined &&
+        telemetry.operating_time !== null
+          ? Number(telemetry.operating_time)
+          : undefined;
+      const parsedHourmeter =
+        parsedHourmeterRaw ??
+        (parsedOperatingTime ? parsedOperatingTime / 3600 : undefined);
 
-      const parsedSpeed = telemetry.speed !== undefined && telemetry.speed !== null ? Number(telemetry.speed) : undefined;
+      const parsedSpeed =
+        telemetry.speed !== undefined && telemetry.speed !== null
+          ? Number(telemetry.speed)
+          : undefined;
 
       // Update vehicles in store so map tooltips (hover) reflect realtime telemetry
-      updateVehiclePosition(
-        vehicleId,
-        lat,
-        lng,
-        newStatus,
-      );
+      updateVehiclePosition(vehicleId, lat, lng, newStatus);
 
       // Store trackingData in store with consistent numeric fields
       setTrackingData({
@@ -249,9 +263,11 @@ export const VehicleDetail = () => {
       // Close dialog
       setIsDialogOpen(false);
       setPendingAction(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // Show error message
-      const errorMessage = error?.response?.data?.message || "Gagal memproses permintaan";
+      const errorMessage =
+        error?.response?.data?.message || "Gagal memproses permintaan";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -261,8 +277,8 @@ export const VehicleDetail = () => {
   if (!vehicle) return <div>Pilih kendaraan</div>;
   if (isLoading || !trackingData?.telemetry)
     return (
-      <div className='w-[255px] h-full p-4 space-y-4 rounded flex flex-col justify-center items-center'>
-        <Loader2 className='w-8 h-8 animate-spin text-[#253A8B]' />
+      <div className="w-[255px] h-full p-4 space-y-4 rounded flex flex-col justify-center items-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#253A8B]" />
         <p>Mengambil data kendaraan...</p>
       </div>
     );
@@ -270,10 +286,10 @@ export const VehicleDetail = () => {
   const statusInfo = getStatusStyle(telemetry?.status);
 
   return (
-    <div className='w-[275px] h-fit p-4 space-y-4 rounded'>
+    <div className="w-[275px] h-fit p-4 space-y-4 rounded">
       {/* Header */}
-      <div className='flex justify-between items-center'>
-        <h2 className='text-lg font-semibold'>Detail Kendaraan</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Detail Kendaraan</h2>
         <button
           onClick={() => {
             useVehicleStore.getState().setSelectedVehicle(null);
@@ -281,81 +297,102 @@ export const VehicleDetail = () => {
             useVehicleStore.getState().setTrackingData(null);
             clearRoute();
           }}
-          className='text-gray-500 hover:text-gray-800 text-xl font-bold'
+          className="text-gray-500 hover:text-gray-800 text-xl font-bold"
         >
           ×
         </button>
       </div>
 
       {/* Time & Status */}
-      <div className='flex items-center justify-between text-sm'>
-        <div className='flex items-center space-x-2'>
-          <span className={`${statusInfo.bg} ${statusInfo.color} rounded-full py-1 px-2 circle text-xs font-medium`}>{statusInfo.text}</span>
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center space-x-2">
+          <span
+            className={`${statusInfo.bg} ${statusInfo.color} rounded-full py-1 px-2 circle text-xs font-medium`}
+          >
+            {statusInfo.text}
+          </span>
         </div>
-        <span className='text-gray-500 font-bold text-xs'>{formatSafeDate(telemetry?.timestamp)}</span>
+        <span className="text-gray-500 font-bold text-xs">
+          {formatSafeDate(telemetry?.timestamp)}
+        </span>
       </div>
 
       {/* Plat & Model */}
       <div>
-        <div className='flex space-x-2 items-center'>
-          <Avatar className='w-10 h-10'>
+        <div className="flex space-x-2 items-center">
+          <Avatar className="w-10 h-10">
             <AvatarFallback className="bg-transparent border-0 p-0">
               <img
                 src={vehicleIconPath}
-                alt={`${finalVehicleType || 'Vehicle'} icon`}
+                alt={`${finalVehicleType || "Vehicle"} icon`}
                 className="w-full h-full object-contain"
                 onError={(e) => {
                   // Fallback jika gambar tidak ditemukan
-                  e.currentTarget.src = '/assets/icons/icon_car_default.webp';
+                  e.currentTarget.src = "/assets/icons/icon_car_default.webp";
                 }}
               />
             </AvatarFallback>
           </Avatar>
-          <h1 className='text-base font-bold'>{vehicleDetail?.licensePlate}</h1>
+          <h1 className="text-base font-bold">{vehicleDetail?.licensePlate}</h1>
         </div>
 
         {/* Nama Kendaraan */}
-        <p className='text-sm text-gray-600 ml-12'>
-          {vehicleDetail?.brand} {vehicleDetail?.model} {vehicleDetail?.year}, {vehicleDetail?.color}
+        <p className="text-sm text-gray-600 ml-12">
+          {vehicleDetail?.brand} {vehicleDetail?.model} {vehicleDetail?.year},{" "}
+          {vehicleDetail?.color}
         </p>
 
         {/* Tombol Pergi ke Profil */}
-        <div className='ml-9'>
-          <VehicleProfileDialog vehicleDetail={vehicleDetail} vehicleId={vehicleId} />
+        <div className="ml-9">
+          <VehicleProfileDialog
+            vehicleDetail={vehicleDetail}
+            vehicleId={vehicleId}
+          />
         </div>
       </div>
 
       {/* Lokasi */}
-      <div className='space-y-3'>
-        <div className='flex items-start space-x-2 text-sm text-gray-700'>
-          <MapPin className='w-4 h-4 mt-1 text-gray-500' />
+      <div className="space-y-3">
+        <div className="flex items-start space-x-2 text-sm text-gray-700">
+          <MapPin className="w-4 h-4 mt-1 text-gray-500" />
           <p>{address}</p>
         </div>
 
         {/* Tombol Bagikan Lokasi - Disabled */}
-        <Button variant='outline' size='sm' disabled className='w-full flex items-center justify-center space-x-2 text-xs opacity-60 cursor-not-allowed'>
-          <Share2 className='w-3 h-3' />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled
+          className="w-full flex items-center justify-center space-x-2 text-xs opacity-60 cursor-not-allowed"
+        >
+          <Share2 className="w-3 h-3" />
           <span>Bagikan Lokasi</span>
         </Button>
 
         {/* Status Update dan Tombol Starter - Hanya tampil jika hasRemoteStarter = true */}
         {hasRemoteStarter && (
-          <div className='space-y-3'>
+          <div className="space-y-3">
             {/* Status Update Badge */}
-            <div className='flex justify-center'>
-              <span className={`text-xs px-3 py-1 rounded-full border ${buttonStyle.statusBg}`}>{buttonStyle.statusLabel}</span>
+            <div className="flex justify-center">
+              <span
+                className={`text-xs px-3 py-1 rounded-full border ${buttonStyle.statusBg}`}
+              >
+                {buttonStyle.statusLabel}
+              </span>
             </div>
 
             {/* Tombol Starter */}
-            <div className='flex justify-center'>
+            <div className="flex justify-center">
               <Button
-                variant='outline'
-                size='sm'
+                variant="outline"
+                size="sm"
                 disabled={buttonStyle.isProcessing}
                 onClick={handleToggleStarter}
                 className={`flex items-center space-x-1 text-xs ${buttonStyle.textColor} ${buttonStyle.borderColor} ${buttonStyle.bgColor}`}
               >
-                <ButtonIcon className={`w-3 h-3 ${buttonStyle.isProcessing ? "animate-spin" : ""}`} />
+                <ButtonIcon
+                  className={`w-3 h-3 ${buttonStyle.isProcessing ? "animate-spin" : ""}`}
+                />
                 <span>{buttonStyle.label}</span>
               </Button>
             </div>
@@ -364,35 +401,51 @@ export const VehicleDetail = () => {
       </div>
 
       {/* Telemetry Info segitu */}
-      <div className='grid grid-cols-2 gap-2 text-center border rounded p-2 text-sm'>
+      <div className="grid grid-cols-2 gap-2 text-center border rounded p-2 text-sm">
         <div>
-          <p className='font-semibold'>{displaySpeedValue} KM/H</p>
-          <p className='text-xs text-gray-500'>KECEPATAN</p>
+          <p className="font-semibold">{displaySpeedValue} KM/H</p>
+          <p className="text-xs text-gray-500">KECEPATAN</p>
         </div>
         <div>
           {finalVehicleType === "EXCAVATOR" ||
-            finalVehicleType === "BULLDOZER" ||
-            finalVehicleType === "WHEEL_LOADER" ||
-            finalVehicleType === "GRADER" ? (
+          finalVehicleType === "BULLDOZER" ||
+          finalVehicleType === "WHEEL_LOADER" ||
+          finalVehicleType === "GRADER" ? (
             <>
-              <p className='font-semibold'>{displayHourmeterValue !== undefined ? displayHourmeterValue.toFixed(2) : 0} Jam</p>
-              <p className='text-xs text-gray-500'>HOURMETER</p>
+              <p className="font-semibold">
+                {displayHourmeterValue !== undefined
+                  ? displayHourmeterValue.toFixed(2)
+                  : 0}{" "}
+                Jam
+              </p>
+              <p className="text-xs text-gray-500">HOURMETER</p>
             </>
           ) : (
             <>
-              <p className='font-semibold'>{displayOdometerValue !== undefined ? displayOdometerValue.toLocaleString() : 0} KM</p>
-              <p className='text-xs text-gray-500'>ODOMETER</p>
+              <p className="font-semibold">
+                {displayOdometerValue !== undefined
+                  ? displayOdometerValue.toLocaleString()
+                  : 0}{" "}
+                KM
+              </p>
+              <p className="text-xs text-gray-500">ODOMETER</p>
             </>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className='flex space-x-1 border rounded overflow-hidden text-sm'>
-        <button className={`w-1/2 py-2 ${activeTab === "detail" ? "bg-[#253A8B] text-white" : "text-[#253A8B] bg-white"}`} onClick={() => setActiveTab("detail")}>
+      <div className="flex space-x-1 border rounded overflow-hidden text-sm">
+        <button
+          className={`w-1/2 py-2 ${activeTab === "detail" ? "bg-[#253A8B] text-white" : "text-[#253A8B] bg-white"}`}
+          onClick={() => setActiveTab("detail")}
+        >
           Detail
         </button>
-        <button className={`w-1/2 py-2 ${activeTab === "activity" ? "bg-[#253A8B] text-white" : "text-[#253A8B] bg-white"}`} onClick={() => setActiveTab("activity")}>
+        <button
+          className={`w-1/2 py-2 ${activeTab === "activity" ? "bg-[#253A8B] text-white" : "text-[#253A8B] bg-white"}`}
+          onClick={() => setActiveTab("activity")}
+        >
           Aktivitas
         </button>
       </div>
@@ -413,7 +466,13 @@ export const VehicleDetail = () => {
       )}
 
       {/* Confirm Code Dialog */}
-      <ConfirmCodeDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} onConfirm={handleConfirmToggle} action={pendingAction || "PROCESS_ON"} isLoading={isSubmitting} />
+      <ConfirmCodeDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onConfirm={handleConfirmToggle}
+        action={pendingAction || "PROCESS_ON"}
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

@@ -31,7 +31,7 @@ export default function VehicleMaintenanceReportPage() {
             <h1>Riwayat Service</h1>
 
             <Button asChild type="button" className="bg-transparent border border-gray-400 text-stone-950 hover:bg-gray-200">
-                <Link to={"/perawatan-kendaraan"}>Kembali</Link>
+                <Link to={"/vehicle-maintenances"}>Kembali</Link>
             </Button>
             </div>
 
