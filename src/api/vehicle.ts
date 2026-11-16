@@ -135,6 +135,36 @@ export const getActiveVehicleSummary = async (
   return res.data.data;
 };
 
+export type RemoteStarterStatus =
+  | "PROCESS_ON"
+  | "UPDATED_ON"
+  | "PROCESS_OFF"
+  | "UPDATED_OFF";
+
+export interface RemoteStarterVehicleItem {
+  id: number;
+  licensePlate: string;
+  status: RemoteStarterStatus | null;
+  lastControlAt: string | null;
+}
+
+export interface RemoteStarterSummary {
+  totalWithFeature: number;
+  processOn: number;
+  updatedOn: number;
+  processOff: number;
+  updatedOff: number;
+  neverControlled: number;
+  vehicles: RemoteStarterVehicleItem[];
+}
+
+export const getRemoteStarterSummary = async (
+  companyId: number,
+): Promise<RemoteStarterSummary> => {
+  const res = await axios.get(`vehicles/summary/remote-starter/${companyId}`);
+  return res.data.data;
+};
+
 export interface ActiveVehicleItem {
   id: number;
   licensePlate: string;
@@ -244,3 +274,5 @@ export const updateOdometer = async (vehicleId: number, odometer: number) => {
   });
   return res.data;
 };
+
+
